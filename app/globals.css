@@ -1,0 +1,57 @@
+@import url('https://cdnjs.cloudflare.com/ajax/libs/remixicon/4.5.0/remixicon.min.css');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom CSS overrides for consistent color scheme */
+@layer utilities {
+  /* Replace blue-600 with bs-green */
+  .bg-blue-600 {
+    @apply bg-bs-green;
+  }
+  
+  .text-blue-600 {
+    @apply text-bs-green;
+  }
+  
+  .border-blue-600 {
+    @apply border-bs-green;
+  }
+  
+  /* Replace blue-700 with green-700 for hover states */
+  .hover\:bg-blue-700:hover {
+    @apply bg-green-700;
+  }
+  
+  .hover\:text-blue-700:hover {
+    @apply text-green-700;
+  }
+  
+  /* Replace blue-800 with green-800 */
+  .hover\:text-blue-800:hover {
+    @apply text-green-800;
+  }
+  
+  /* Replace blue-500 with green-600 */
+  .bg-blue-500 {
+    @apply bg-green-600;
+  }
+  
+  .hover\:bg-blue-600:hover {
+    @apply bg-green-700;
+  }
+  
+  /* Replace blue-100 with green-100 */
+  .bg-blue-100 {
+    @apply bg-green-100;
+  }
+  
+  /* Focus states */
+  .focus\:ring-blue-500:focus {
+    @apply ring-bs-green;
+  }
+  
+  .focus\:ring-blue-600:focus {
+    @apply ring-bs-green;
+  }
+}
