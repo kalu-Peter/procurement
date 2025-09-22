@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { getCurrentUser, setCurrentUser } from '@/lib/auth';
 import PublicNav from '@/components/PublicNav';
+import ForgotPassword from '@/components/ForgotPassword';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -36,7 +37,7 @@ export default function LoginPage() {
     setError('');
 
     try {
-      const response = await fetch('http://localhost:8000/api/auth/login.php', {
+      const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -44,7 +45,15 @@ export default function LoginPage() {
         body: JSON.stringify({ email, password })
       });
 
-      const data = await response.json();
+      const text = await response.text();
+      let data: any = null;
+      try {
+        data = JSON.parse(text);
+      } catch (e) {
+        setError(`Unexpected server response (${response.status}): ${text.slice(0,200)}`);
+        setLoading(false);
+        return;
+      }
 
       if (response.ok) {
         setCurrentUser(data.user);
@@ -172,6 +181,11 @@ export default function LoginPage() {
               </div>
             </div>
           </form>
+
+          {/* Forgot password component */}
+          <div className="mt-4">
+            <ForgotPassword />
+          </div>
         </div>
       </div>
       </div>
