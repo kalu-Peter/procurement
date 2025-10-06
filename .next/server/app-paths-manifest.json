@@ -1,10 +1,13 @@
 {
-  "/api/auth/instant_reset/route": "app/api/auth/instant_reset/route.js",
-  "/api/auth/login/route": "app/api/auth/login/route.js",
-  "/page": "app/page.js",
+  "/_not-found/page": "app/_not-found/page.js",
+  "/about/page": "app/about/page.js",
   "/login/page": "app/login/page.js",
+  "/assets/page": "app/assets/page.js",
   "/dashboard/admin/page": "app/dashboard/admin/page.js",
-  "/disposals/new/page": "app/disposals/new/page.js",
-  "/dashboard/page": "app/dashboard/page.js",
-  "/disposals/page": "app/disposals/page.js"
+  "/disposals/page": "app/disposals/page.js",
+  "/transfers/new/page": "app/transfers/new/page.js",
+  "/assets/[id]/edit/page": "app/assets/[id]/edit/page.js",
+  "/assets/import/page": "app/assets/import/page.js",
+  "/assets/new/page": "app/assets/new/page.js",
+  "/suppliers-list/page": "app/suppliers-list/page.js"
 }
