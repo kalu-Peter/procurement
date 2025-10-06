@@ -13,7 +13,6 @@ interface HeaderProps {
 export default function Header({ user, onLogout }: HeaderProps) {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
-  const [showSupplierDropdown, setShowSupplierDropdown] = useState(false);
 
   const notifications = [
     {
@@ -66,58 +65,12 @@ export default function Header({ user, onLogout }: HeaderProps) {
                 >
                   Disposals
                 </Link>
-                <div className="relative">
-                  <button
-                    onClick={() =>
-                      setShowSupplierDropdown(!showSupplierDropdown)
-                    }
-                    className="text-gray-700 hover:text-gray-900 font-medium whitespace-nowrap flex items-center space-x-1"
-                  >
-                    <span>Supplier Registration</span>
-                    <i
-                      className={`ri-arrow-down-s-line transition-transform ${
-                        showSupplierDropdown ? "rotate-180" : ""
-                      }`}
-                    ></i>
-                  </button>
-
-                  {showSupplierDropdown && (
-                    <div className="absolute top-full left-0 mt-1 w-64 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
-                      <Link
-                        href="/suppliers"
-                        className="block px-4 py-3 text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-colors"
-                        onClick={() => setShowSupplierDropdown(false)}
-                      >
-                        <div className="flex items-center space-x-3">
-                          <i className="ri-user-add-line text-green-600"></i>
-                          <div>
-                            <div className="font-medium">
-                              Register as Supplier
-                            </div>
-                            <div className="text-sm text-gray-500">
-                              Join our supplier network
-                            </div>
-                          </div>
-                        </div>
-                      </Link>
-                      <Link
-                        href="/suppliers-list"
-                        className="block px-4 py-3 text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-colors"
-                        onClick={() => setShowSupplierDropdown(false)}
-                      >
-                        <div className="flex items-center space-x-3">
-                          <i className="ri-store-line text-blue-600"></i>
-                          <div>
-                            <div className="font-medium">Browse Suppliers</div>
-                            <div className="text-sm text-gray-500">
-                              View supplier directory
-                            </div>
-                          </div>
-                        </div>
-                      </Link>
-                    </div>
-                  )}
-                </div>
+                <Link
+                  href="/suppliers-list"
+                  className="text-gray-700 hover:text-gray-900 font-medium whitespace-nowrap"
+                >
+                  Suppliers
+                </Link>
 
                 {(user.role === "admin" ||
                   user.role === "procurement_officer") && (
