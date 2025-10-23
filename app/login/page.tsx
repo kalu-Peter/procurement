@@ -37,7 +37,7 @@ export default function LoginPage() {
     setError("");
 
     try {
-      const response = await fetch("http://127.0.0.1:8000/api/auth/login.php", {
+      const response = await fetch("http://localhost:8000/api/auth/login.php", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

@@ -27,7 +27,7 @@ export default function ForgotPassword() {
     try {
       // Call the PHP API directly
       const res = await fetch(
-        "http://127.0.0.1:8000/api/auth/instant_reset.php",
+        "http://localhost:8000/api/auth/instant_reset.php",
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

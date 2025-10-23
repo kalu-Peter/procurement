@@ -330,7 +330,7 @@ export default function InteractiveSupplierRegistration() {
       {user ? (
         <Header user={user} onLogout={handleLogout} />
       ) : (
-        <PublicNav currentPage="suppliers" />
+        <PublicNav currentPage="supplier-registration" />
       )}
       <div className="max-w-4xl mx-auto px-6 py-8">
         <div className="mb-8">
