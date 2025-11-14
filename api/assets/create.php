@@ -26,9 +26,19 @@ if (!$data) {
 $asset_id = bin2hex(random_bytes(16));
 $asset_id = substr($asset_id, 0, 8) . '-' . substr($asset_id, 8, 4) . '-' . substr($asset_id, 12, 4) . '-' . substr($asset_id, 16, 4) . '-' . substr($asset_id, 20);
 
+// Validate required fields
+$required_fields = ['asset_tag', 'name', 'category', 'department'];
+foreach ($required_fields as $field) {
+    if (!isset($data[$field]) || empty(trim($data[$field]))) {
+        echo json_encode(['success' => false, 'error' => "Required field missing: $field"]);
+        exit;
+    }
+}
+
 // Set default values
 $status = $data['status'] ?? 'Active';
-$current_value = $data['current_value'] ?? $data['purchase_price'];
+$purchase_price = $data['purchase_price'] ?? null;
+$current_value = $data['current_value'] ?? $purchase_price;
 $created_at = date('Y-m-d H:i:s');
 
 $query = "INSERT INTO assets (
@@ -45,7 +55,7 @@ $params = [
     $data['department'],
     $data['description'] ?? null,
     $data['purchase_date'] ?? null,
-    $data['purchase_price'] ?? null,
+    $purchase_price,
     $current_value,
     $data['condition'] ?? null,
     $data['location'] ?? null,
@@ -57,7 +67,7 @@ $params = [
     $created_at
 ];
 
-$result = pg_query_params($con, $query, $params);
+$result = @pg_query_params($con, $query, $params);
 
 if ($result) {
     echo json_encode([
@@ -66,11 +76,19 @@ if ($result) {
         'asset_id' => $asset_id
     ]);
 } else {
-    echo json_encode([
-        'success' => false,
-        'error' => pg_last_error($con)
-    ]);
+    $error = pg_last_error($con);
+    // Check for duplicate asset tag constraint violation
+    if (strpos($error, 'assets_asset_tag_key') !== false) {
+        echo json_encode([
+            'success' => false,
+            'error' => 'Asset tag already exists. Please use a unique asset tag.'
+        ]);
+    } else {
+        echo json_encode([
+            'success' => false,
+            'error' => 'Database error: ' . $error
+        ]);
+    }
 }
 
 pg_close($con);
-?>

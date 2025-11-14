@@ -16,7 +16,7 @@ $status = isset($_GET['status']) ? $_GET['status'] : '';
 // Build the query with filters
 $query = "SELECT tr.*, a.name as asset_name, a.asset_tag 
           FROM transfer_requests tr 
-          LEFT JOIN assets a ON tr.asset_id = a.id::text 
+          LEFT JOIN assets a ON tr.asset_id = a.id 
           WHERE 1=1";
 $params = [];
 
@@ -29,9 +29,9 @@ $query .= " ORDER BY tr.request_date DESC";
 
 // Execute query
 if (empty($params)) {
-    $result = pg_query($con, $query);
+    $result = @pg_query($con, $query);
 } else {
-    $result = pg_query_params($con, $query, $params);
+    $result = @pg_query_params($con, $query, $params);
 }
 
 if (!$result) {
@@ -53,4 +53,3 @@ echo json_encode([
 ]);
 
 pg_close($con);
-?>

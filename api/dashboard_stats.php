@@ -43,23 +43,32 @@ try {
     }
 
     // Get active transfers count (pending status)
-    $transfers_query = "SELECT COUNT(*) as total FROM transfers WHERE status = 'pending'";
-    $transfers_result = pg_query($con, $transfers_query);
+    // table used in transfer endpoints: transfer_requests, status uses 'Pending'
+    $transfers_query = "SELECT COUNT(*) as total FROM transfer_requests WHERE status = 'Pending'";
+    // suppress warnings from pg_query if table does not exist and handle result explicitly
+    $transfers_result = @pg_query($con, $transfers_query);
     $active_transfers = 0;
 
     if ($transfers_result) {
         $transfers_row = pg_fetch_assoc($transfers_result);
         $active_transfers = (int)$transfers_row['total'];
+    } else {
+        error_log('dashboard_stats: transfers query failed: ' . pg_last_error($con));
+        $active_transfers = 0;
     }
 
     // Get pending disposals count
-    $disposals_query = "SELECT COUNT(*) as total FROM disposals WHERE status = 'pending'";
-    $disposals_result = pg_query($con, $disposals_query);
+    // disposal requests are stored in disposal_requests, status uses 'Pending'
+    $disposals_query = "SELECT COUNT(*) as total FROM disposal_requests WHERE status = 'Pending'";
+    $disposals_result = @pg_query($con, $disposals_query);
     $pending_disposals = 0;
 
     if ($disposals_result) {
         $disposals_row = pg_fetch_assoc($disposals_result);
         $pending_disposals = (int)$disposals_row['total'];
+    } else {
+        error_log('dashboard_stats: disposals query failed: ' . pg_last_error($con));
+        $pending_disposals = 0;
     }
 
     // Return dashboard statistics

@@ -23,29 +23,27 @@ if (!$data || !isset($data['id']) || !isset($data['status'])) {
 }
 
 $query = "UPDATE transfer_requests 
-          SET status = $1, approved_by = $2, approved_date = $3 
-          WHERE id = $4";
+          SET status = $1 
+          WHERE id = $2";
 
 $params = [
     $data['status'],
-    $data['approved_by'] ?? null,
-    date('Y-m-d H:i:s'),
     $data['id']
 ];
 
-$result = pg_query_params($con, $query, $params);
+$result = @pg_query_params($con, $query, $params);
 
 if ($result) {
     // If approved, we might want to update the asset's department as well
     if ($data['status'] === 'Approved') {
         // Get transfer details first
         $transfer_query = "SELECT asset_id, to_department FROM transfer_requests WHERE id = $1";
-        $transfer_result = pg_query_params($con, $transfer_query, [$data['id']]);
-        
+        $transfer_result = @pg_query_params($con, $transfer_query, [$data['id']]);
+
         if ($transfer_row = pg_fetch_assoc($transfer_result)) {
             // Update asset department
             $asset_update = "UPDATE assets SET department = $1 WHERE id = $2";
-            pg_query_params($con, $asset_update, [
+            @pg_query_params($con, $asset_update, [
                 $transfer_row['to_department'],
                 $transfer_row['asset_id']
             ]);
@@ -64,4 +62,3 @@ if ($result) {
 }
 
 pg_close($con);
-?>
