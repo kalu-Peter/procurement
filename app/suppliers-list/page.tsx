@@ -39,6 +39,7 @@ export default function SuppliersListPage() {
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [updatingStatus, setUpdatingStatus] = useState<string | null>(null);
   const [filters, setFilters] = useState({
     status: "",
     category: "",
@@ -168,6 +169,53 @@ export default function SuppliersListPage() {
       month: "short",
       day: "numeric",
     });
+  };
+
+  const handleStatusChange = async (supplierId: string, newStatus: string) => {
+    setUpdatingStatus(supplierId);
+    try {
+      const response = await fetch(
+        "http://localhost:8000/api/suppliers/update.php",
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            id: supplierId,
+            status: newStatus,
+          }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Refresh the suppliers list to show updated status
+        await fetchSuppliers();
+        alert(`Supplier ${newStatus} successfully!`);
+      } else {
+        alert(
+          "Failed to update supplier status: " + (data.error || "Unknown error")
+        );
+      }
+    } catch (error) {
+      console.error("Error updating supplier status:", error);
+      alert("Failed to update supplier status. Please try again.");
+    } finally {
+      setUpdatingStatus(null);
+    }
+  };
+
+  const confirmStatusChange = (
+    supplierId: string,
+    supplierName: string,
+    newStatus: string
+  ) => {
+    const action = newStatus === "approved" ? "approve" : "reject";
+    if (confirm(`Are you sure you want to ${action} "${supplierName}"?`)) {
+      handleStatusChange(supplierId, newStatus);
+    }
   };
 
   return (
@@ -376,13 +424,24 @@ export default function SuppliersListPage() {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Registered
                     </th>
+                    {(user?.role === "admin" ||
+                      user?.role === "procurement_officer") && (
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Actions
+                      </th>
+                    )}
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {suppliers.length === 0 ? (
                     <tr>
                       <td
-                        colSpan={6}
+                        colSpan={
+                          user?.role === "admin" ||
+                          user?.role === "procurement_officer"
+                            ? 7
+                            : 6
+                        }
                         className="px-6 py-12 text-center text-gray-500"
                       >
                         <i className="ri-building-line text-4xl mb-4 block"></i>
@@ -435,6 +494,93 @@ export default function SuppliersListPage() {
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                           {formatDate(supplier.created_at)}
                         </td>
+                        {(user?.role === "admin" ||
+                          user?.role === "procurement_officer") && (
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <div className="flex space-x-2">
+                              {supplier.status === "pending" && (
+                                <>
+                                  <button
+                                    onClick={() =>
+                                      confirmStatusChange(
+                                        supplier.id.toString(),
+                                        supplier.name,
+                                        "approved"
+                                      )
+                                    }
+                                    disabled={
+                                      updatingStatus === supplier.id.toString()
+                                    }
+                                    className="text-green-600 hover:text-green-900 px-2 py-1 text-xs font-medium rounded-md border border-green-300 hover:bg-green-50 transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    title="Approve supplier"
+                                  >
+                                    {updatingStatus === supplier.id.toString()
+                                      ? "Updating..."
+                                      : "Approve"}
+                                  </button>
+                                  <button
+                                    onClick={() =>
+                                      confirmStatusChange(
+                                        supplier.id.toString(),
+                                        supplier.name,
+                                        "rejected"
+                                      )
+                                    }
+                                    disabled={
+                                      updatingStatus === supplier.id.toString()
+                                    }
+                                    className="text-red-600 hover:text-red-900 px-2 py-1 text-xs font-medium rounded-md border border-red-300 hover:bg-red-50 transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    title="Reject supplier"
+                                  >
+                                    {updatingStatus === supplier.id.toString()
+                                      ? "Updating..."
+                                      : "Reject"}
+                                  </button>
+                                </>
+                              )}
+                              {supplier.status === "approved" && (
+                                <button
+                                  onClick={() =>
+                                    confirmStatusChange(
+                                      supplier.id.toString(),
+                                      supplier.name,
+                                      "rejected"
+                                    )
+                                  }
+                                  disabled={
+                                    updatingStatus === supplier.id.toString()
+                                  }
+                                  className="text-red-600 hover:text-red-900 px-2 py-1 text-xs font-medium rounded-md border border-red-300 hover:bg-red-50 transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                                  title="Reject supplier"
+                                >
+                                  {updatingStatus === supplier.id.toString()
+                                    ? "Updating..."
+                                    : "Reject"}
+                                </button>
+                              )}
+                              {supplier.status === "rejected" && (
+                                <button
+                                  onClick={() =>
+                                    confirmStatusChange(
+                                      supplier.id.toString(),
+                                      supplier.name,
+                                      "approved"
+                                    )
+                                  }
+                                  disabled={
+                                    updatingStatus === supplier.id.toString()
+                                  }
+                                  className="text-green-600 hover:text-green-900 px-2 py-1 text-xs font-medium rounded-md border border-green-300 hover:bg-green-50 transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                                  title="Approve supplier"
+                                >
+                                  {updatingStatus === supplier.id.toString()
+                                    ? "Updating..."
+                                    : "Approve"}
+                                </button>
+                              )}
+                            </div>
+                          </td>
+                        )}
                       </tr>
                     ))
                   )}

@@ -1,7 +1,7 @@
 {
-  "/assets/page": "app/assets/page.js",
-  "/disposals/new/page": "app/disposals/new/page.js",
-  "/disposals/page": "app/disposals/page.js",
-  "/transfers/page": "app/transfers/page.js",
-  "/transfers/new/page": "app/transfers/new/page.js"
+  "/page": "app/page.js",
+  "/assets/new/page": "app/assets/new/page.js",
+  "/suppliers-list/page": "app/suppliers-list/page.js",
+  "/login/page": "app/login/page.js",
+  "/dashboard/admin/page": "app/dashboard/admin/page.js"
 }
