@@ -678,10 +678,7 @@ export default function UserManagementPage() {
         <div className="p-4 border-b border-gray-200">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
-              <h3 className="text-lg font-semibold text-gray-900">
-                <i className="ri-filter-3-line mr-2"></i>
-                Filters
-              </h3>
+              <h3 className="text-lg font-semibold text-gray-900">Filters</h3>
               {getActiveFilterCount() > 0 && (
                 <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
                   {getActiveFilterCount()} active
@@ -692,11 +689,7 @@ export default function UserManagementPage() {
               onClick={() => setIsFilterExpanded(!isFilterExpanded)}
               className="text-gray-500 hover:text-gray-700 transition-colors"
             >
-              <i
-                className={`ri-arrow-${
-                  isFilterExpanded ? "up" : "down"
-                }-s-line text-xl`}
-              ></i>
+              {isFilterExpanded ? "▲" : "▼"}
             </button>
           </div>
         </div>
@@ -707,7 +700,6 @@ export default function UserManagementPage() {
               {/* Role Filter */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  <i className="ri-user-settings-line mr-1"></i>
                   Role
                 </label>
                 <select
@@ -728,7 +720,6 @@ export default function UserManagementPage() {
               {/* Status Filter */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  <i className="ri-pulse-line mr-1"></i>
                   Status
                 </label>
                 <select
@@ -747,7 +738,6 @@ export default function UserManagementPage() {
               {/* Department Filter */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  <i className="ri-building-line mr-1"></i>
                   Department
                 </label>
                 <select
@@ -773,7 +763,6 @@ export default function UserManagementPage() {
               {/* Search Filter */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  <i className="ri-search-line mr-1"></i>
                   Search
                 </label>
                 <div className="relative">
@@ -784,15 +773,14 @@ export default function UserManagementPage() {
                     onChange={(e) =>
                       handleFilterChange("search", e.target.value)
                     }
-                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                   />
-                  <i className="ri-search-line absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
                   {searchTerm && (
                     <button
                       onClick={() => handleFilterChange("search", "")}
                       className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
                     >
-                      <i className="ri-close-line"></i>
+                      ×
                     </button>
                   )}
                 </div>
@@ -814,7 +802,7 @@ export default function UserManagementPage() {
                           onClick={() => handleFilterChange("role", "")}
                           className="ml-1.5 hover:text-purple-900"
                         >
-                          <i className="ri-close-line"></i>
+                          ×
                         </button>
                       </span>
                     )}
@@ -826,7 +814,7 @@ export default function UserManagementPage() {
                           onClick={() => handleFilterChange("is_active", "")}
                           className="ml-1.5 hover:text-green-900"
                         >
-                          <i className="ri-close-line"></i>
+                          ×
                         </button>
                       </span>
                     )}
@@ -837,7 +825,7 @@ export default function UserManagementPage() {
                           onClick={() => handleFilterChange("department", "")}
                           className="ml-1.5 hover:text-blue-900"
                         >
-                          <i className="ri-close-line"></i>
+                          ×
                         </button>
                       </span>
                     )}
@@ -848,7 +836,7 @@ export default function UserManagementPage() {
                           onClick={() => handleFilterChange("search", "")}
                           className="ml-1.5 hover:text-yellow-900"
                         >
-                          <i className="ri-close-line"></i>
+                          ×
                         </button>
                       </span>
                     )}
@@ -857,7 +845,6 @@ export default function UserManagementPage() {
                     onClick={clearFilters}
                     className="text-sm text-gray-500 hover:text-gray-700 font-medium transition-colors"
                   >
-                    <i className="ri-refresh-line mr-1"></i>
                     Clear All
                   </button>
                 </div>
