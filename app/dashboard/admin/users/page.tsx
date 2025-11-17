@@ -27,7 +27,7 @@ interface UserStats {
 
 export default function UserManagementPage() {
   const router = useRouter();
-  const [user, setUser] = useState(getCurrentUser());
+  const [user, setUser] = useState<any>(null);
   const [users, setUsers] = useState<User[]>([]);
   const [stats, setStats] = useState<UserStats>({
     total: 0,
@@ -57,12 +57,15 @@ export default function UserManagementPage() {
   });
 
   useEffect(() => {
-    if (!user || user.role !== "admin") {
+    const currentUser = getCurrentUser();
+    setUser(currentUser);
+
+    if (!currentUser || currentUser.role !== "admin") {
       router.push("/");
       return;
     }
     fetchUsers();
-  }, [router, user]);
+  }, [router]);
 
   const fetchUsers = async () => {
     setLoading(true);
@@ -145,44 +148,6 @@ export default function UserManagementPage() {
     }
   };
 
-  const handleDeactivateUser = async (userId: string, userName: string) => {
-    if (
-      !confirm(
-        `Are you sure you want to deactivate "${userName}"? This will prevent them from logging in, but can be reversed later.`
-      )
-    ) {
-      return;
-    }
-
-    setActionLoading(userId);
-    try {
-      const response = await fetch(
-        "http://localhost:8000/api/users/delete.php",
-        {
-          method: "DELETE",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ id: userId }),
-        }
-      );
-
-      const data = await response.json();
-
-      if (data.success) {
-        await fetchUsers();
-        alert(`User "${userName}" has been deactivated!`);
-      } else {
-        alert("Failed to deactivate user: " + (data.error || "Unknown error"));
-      }
-    } catch (error) {
-      console.error("Error deactivating user:", error);
-      alert("Failed to deactivate user. Please try again.");
-    } finally {
-      setActionLoading(null);
-    }
-  };
-
   const handleDeleteUser = async (userId: string, userName: string) => {
     if (
       !confirm(
@@ -214,7 +179,20 @@ export default function UserManagementPage() {
         }
       );
 
-      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const responseText = await response.text();
+      let data;
+
+      try {
+        data = JSON.parse(responseText);
+      } catch (parseError) {
+        console.error("JSON parse error:", parseError);
+        console.error("Response text:", responseText);
+        throw new Error("Invalid JSON response from server");
+      }
 
       if (data.success) {
         await fetchUsers();
@@ -222,11 +200,27 @@ export default function UserManagementPage() {
           `User "${userName}" has been permanently deleted from the system!`
         );
       } else {
-        alert("Failed to delete user: " + (data.error || "Unknown error"));
+        // Check for specific error types
+        if (data.error && data.error.includes("referenced in")) {
+          const confirmDeactivate = confirm(
+            `Cannot delete "${userName}": ${data.error}\n\nWould you like to deactivate this user instead? This will prevent login while preserving data integrity.`
+          );
+          if (confirmDeactivate) {
+            // Call the toggle active function to deactivate
+            handleToggleActive(userId, true); // true because we want to deactivate (set to false)
+            return;
+          }
+        } else {
+          alert("Failed to delete user: " + (data.error || "Unknown error"));
+        }
       }
     } catch (error) {
       console.error("Error deleting user:", error);
-      alert("Failed to delete user. Please try again.");
+      if (error instanceof Error && error.message.includes("JSON")) {
+        alert("Server error: Invalid response format. Please try again.");
+      } else {
+        alert("Failed to delete user. Please try again.");
+      }
     } finally {
       setActionLoading(null);
     }
@@ -722,27 +716,13 @@ export default function UserManagementPage() {
                               ? "Deactivate"
                               : "Activate"}
                           </button>
-                          {userData.is_active && (
-                            <button
-                              onClick={() =>
-                                handleDeactivateUser(userData.id, userData.name)
-                              }
-                              disabled={actionLoading === userData.id}
-                              className="text-orange-600 hover:text-orange-900 text-xs px-2 py-1 rounded border border-orange-300 hover:bg-orange-50 transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                              title="Deactivate user (reversible)"
-                            >
-                              {actionLoading === userData.id
-                                ? "Loading..."
-                                : "Deactivate"}
-                            </button>
-                          )}
                           <button
                             onClick={() =>
                               handleDeleteUser(userData.id, userData.name)
                             }
                             disabled={actionLoading === userData.id}
                             className="text-red-600 hover:text-red-900 text-xs px-2 py-1 rounded border border-red-300 hover:bg-red-50 transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                            title="Permanently delete user (irreversible)"
+                            title="Permanently delete user (irreversible). Note: Users with existing data (transfers, assets, etc.) cannot be deleted and will be offered deactivation instead."
                           >
                             {actionLoading === userData.id
                               ? "Loading..."
