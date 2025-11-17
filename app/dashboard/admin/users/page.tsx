@@ -40,6 +40,11 @@ export default function UserManagementPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [notification, setNotification] = useState<{
+    show: boolean;
+    message: string;
+    type: "success" | "error";
+  }>({ show: false, message: "", type: "success" });
   const [filters, setFilters] = useState({
     role: "",
     department: "",
@@ -55,6 +60,16 @@ export default function UserManagementPage() {
     department: "",
     is_active: true,
   });
+
+  const showNotification = (
+    message: string,
+    type: "success" | "error" = "success"
+  ) => {
+    setNotification({ show: true, message, type });
+    setTimeout(() => {
+      setNotification({ show: false, message: "", type: "success" });
+    }, 4000);
+  };
 
   useEffect(() => {
     const currentUser = getCurrentUser();
@@ -112,6 +127,23 @@ export default function UserManagementPage() {
   };
 
   const handleToggleActive = async (userId: string, isActive: boolean) => {
+    const action = isActive ? "deactivate" : "activate";
+    const actionPast = isActive ? "deactivated" : "activated";
+
+    // Find user name for better messaging
+    const user = users.find((u) => u.id === userId);
+    const userName = user ? user.name : "User";
+
+    // Show confirmation for deactivation, but not for activation
+    if (isActive) {
+      const confirmDeactivate = confirm(
+        `Are you sure you want to deactivate "${userName}"? They will no longer be able to log in, but this can be reversed later.`
+      );
+      if (!confirmDeactivate) {
+        return;
+      }
+    }
+
     setActionLoading(userId);
     try {
       const response = await fetch(
@@ -128,21 +160,46 @@ export default function UserManagementPage() {
         }
       );
 
-      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const responseText = await response.text();
+      let data;
+
+      try {
+        data = JSON.parse(responseText);
+      } catch (parseError) {
+        console.error("JSON parse error:", parseError);
+        console.error("Response text:", responseText);
+        throw new Error("Invalid JSON response from server");
+      }
 
       if (data.success) {
         await fetchUsers();
-        // Show success message
-        const action = !isActive ? "activated" : "deactivated";
-        alert(`User ${action} successfully!`);
+        // Show success message with better feedback
+        showNotification(
+          `✅ "${userName}" has been ${actionPast} successfully!`
+        );
       } else {
-        alert(
-          "Failed to update user status: " + (data.error || "Unknown error")
+        showNotification(
+          `Failed to ${action} user: ` + (data.error || "Unknown error"),
+          "error"
         );
       }
     } catch (error) {
-      console.error("Error updating user status:", error);
-      alert("Failed to update user status. Please try again.");
+      console.error(`Error ${action}ing user:`, error);
+      if (error instanceof Error && error.message.includes("JSON")) {
+        showNotification(
+          "Server error: Invalid response format. Please try again.",
+          "error"
+        );
+      } else {
+        showNotification(
+          `Failed to ${action} user. Please try again.`,
+          "error"
+        );
+      }
     } finally {
       setActionLoading(null);
     }
@@ -326,6 +383,94 @@ export default function UserManagementPage() {
 
   return (
     <>
+      {/* Notification Toast */}
+      {notification.show && (
+        <div
+          className={`fixed top-4 right-4 z-50 max-w-md w-full shadow-lg rounded-lg pointer-events-auto ${
+            notification.type === "success"
+              ? "bg-green-50 border border-green-200"
+              : "bg-red-50 border border-red-200"
+          }`}
+        >
+          <div className="p-4">
+            <div className="flex items-start">
+              <div className="flex-shrink-0">
+                {notification.type === "success" ? (
+                  <svg
+                    className="h-6 w-6 text-green-400"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                ) : (
+                  <svg
+                    className="h-6 w-6 text-red-400"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"
+                    />
+                  </svg>
+                )}
+              </div>
+              <div className="ml-3 w-0 flex-1">
+                <p
+                  className={`text-sm font-medium ${
+                    notification.type === "success"
+                      ? "text-green-800"
+                      : "text-red-800"
+                  }`}
+                >
+                  {notification.message}
+                </p>
+              </div>
+              <div className="ml-4 flex-shrink-0 flex">
+                <button
+                  onClick={() =>
+                    setNotification({
+                      show: false,
+                      message: "",
+                      type: "success",
+                    })
+                  }
+                  className={`rounded-md inline-flex focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                    notification.type === "success"
+                      ? "text-green-400 hover:text-green-500 focus:ring-green-500"
+                      : "text-red-400 hover:text-red-500 focus:ring-red-500"
+                  }`}
+                >
+                  <span className="sr-only">Close</span>
+                  <svg
+                    className="h-5 w-5"
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex justify-between items-center mb-8">
         <div>
@@ -667,12 +812,17 @@ export default function UserManagementPage() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span
-                          className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                             userData.is_active
-                              ? "bg-green-100 text-green-800"
-                              : "bg-red-100 text-red-800"
+                              ? "bg-green-100 text-green-800 border border-green-200"
+                              : "bg-red-100 text-red-800 border border-red-200"
                           }`}
                         >
+                          <span
+                            className={`w-2 h-2 rounded-full mr-1.5 ${
+                              userData.is_active ? "bg-green-400" : "bg-red-400"
+                            }`}
+                          ></span>
                           {userData.is_active ? "Active" : "Inactive"}
                         </span>
                       </td>
@@ -699,22 +849,56 @@ export default function UserManagementPage() {
                               )
                             }
                             disabled={actionLoading === userData.id}
-                            className={`text-xs px-2 py-1 rounded border transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed ${
+                            className={`text-xs px-3 py-1 rounded-full border-2 font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed ${
                               userData.is_active
-                                ? "text-red-600 border-red-300 hover:bg-red-50"
-                                : "text-green-600 border-green-300 hover:bg-green-50"
+                                ? "text-red-700 border-red-300 bg-red-50 hover:bg-red-100 hover:border-red-400"
+                                : "text-green-700 border-green-300 bg-green-50 hover:bg-green-100 hover:border-green-400"
                             }`}
                             title={
                               userData.is_active
-                                ? "Deactivate user"
-                                : "Activate user"
+                                ? `Deactivate ${userData.name} - They will not be able to log in`
+                                : `Activate ${userData.name} - Restore login access`
                             }
                           >
-                            {actionLoading === userData.id
-                              ? "Loading..."
-                              : userData.is_active
-                              ? "Deactivate"
-                              : "Activate"}
+                            {actionLoading === userData.id ? (
+                              <span className="flex items-center">
+                                <svg
+                                  className="animate-spin -ml-1 mr-1 h-3 w-3"
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  fill="none"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <circle
+                                    className="opacity-25"
+                                    cx="12"
+                                    cy="12"
+                                    r="10"
+                                    stroke="currentColor"
+                                    strokeWidth="4"
+                                  ></circle>
+                                  <path
+                                    className="opacity-75"
+                                    fill="currentColor"
+                                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                  ></path>
+                                </svg>
+                                Loading...
+                              </span>
+                            ) : (
+                              <span className="flex items-center">
+                                {userData.is_active ? (
+                                  <>
+                                    <i className="ri-pause-circle-line mr-1"></i>
+                                    Deactivate
+                                  </>
+                                ) : (
+                                  <>
+                                    <i className="ri-play-circle-line mr-1"></i>
+                                    Activate
+                                  </>
+                                )}
+                              </span>
+                            )}
                           </button>
                           <button
                             onClick={() =>
