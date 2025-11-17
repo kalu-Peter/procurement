@@ -51,6 +51,8 @@ export default function UserManagementPage() {
     is_active: "",
     search: "",
   });
+  const [searchTerm, setSearchTerm] = useState("");
+  const [isFilterExpanded, setIsFilterExpanded] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editFormData, setEditFormData] = useState({
@@ -82,6 +84,21 @@ export default function UserManagementPage() {
     fetchUsers();
   }, [router]);
 
+  // Debounced search effect
+  useEffect(() => {
+    const debounceTimer = setTimeout(() => {
+      if (searchTerm !== filters.search) {
+        setFilters((prev) => ({ ...prev, search: searchTerm }));
+      }
+    }, 500);
+
+    return () => clearTimeout(debounceTimer);
+  }, [searchTerm]);
+
+  // Auto-apply filters when they change
+  useEffect(() => {
+    fetchUsers();
+  }, [filters]);
   const fetchUsers = async () => {
     setLoading(true);
     try {
@@ -114,16 +131,20 @@ export default function UserManagementPage() {
   };
 
   const handleFilterChange = (key: string, value: string) => {
-    setFilters((prev) => ({ ...prev, [key]: value }));
-  };
-
-  const applyFilters = () => {
-    fetchUsers();
+    if (key === "search") {
+      setSearchTerm(value);
+    } else {
+      setFilters((prev) => ({ ...prev, [key]: value }));
+    }
   };
 
   const clearFilters = () => {
     setFilters({ role: "", department: "", is_active: "", search: "" });
-    setTimeout(() => fetchUsers(), 100);
+    setSearchTerm("");
+  };
+
+  const getActiveFilterCount = () => {
+    return Object.values(filters).filter((value) => value !== "").length;
   };
 
   const handleToggleActive = async (userId: string, isActive: boolean) => {
@@ -652,83 +673,198 @@ export default function UserManagementPage() {
         </div>
       )}
 
-      {/* Filters */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Filters</h3>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Role
-            </label>
-            <select
-              value={filters.role}
-              onChange={(e) => handleFilterChange("role", e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+      {/* Enhanced Filters */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-8">
+        <div className="p-4 border-b border-gray-200">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <h3 className="text-lg font-semibold text-gray-900">
+                <i className="ri-filter-3-line mr-2"></i>
+                Filters
+              </h3>
+              {getActiveFilterCount() > 0 && (
+                <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
+                  {getActiveFilterCount()} active
+                </span>
+              )}
+            </div>
+            <button
+              onClick={() => setIsFilterExpanded(!isFilterExpanded)}
+              className="text-gray-500 hover:text-gray-700 transition-colors"
             >
-              <option value="">All Roles</option>
-              <option value="admin">Administrator</option>
-              <option value="procurement_officer">Procurement Officer</option>
-              <option value="department_head">Department Head</option>
-              <option value="supplier">Supplier</option>
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Status
-            </label>
-            <select
-              value={filters.is_active}
-              onChange={(e) => handleFilterChange("is_active", e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">All Statuses</option>
-              <option value="true">Active</option>
-              <option value="false">Inactive</option>
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Department
-            </label>
-            <input
-              type="text"
-              placeholder="Filter by department..."
-              value={filters.department}
-              onChange={(e) => handleFilterChange("department", e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Search
-            </label>
-            <input
-              type="text"
-              placeholder="Search users..."
-              value={filters.search}
-              onChange={(e) => handleFilterChange("search", e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+              <i
+                className={`ri-arrow-${
+                  isFilterExpanded ? "up" : "down"
+                }-s-line text-xl`}
+              ></i>
+            </button>
           </div>
         </div>
 
-        <div className="flex gap-4">
-          <button
-            onClick={applyFilters}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-          >
-            Apply Filters
-          </button>
-          <button
-            onClick={clearFilters}
-            className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300"
-          >
-            Clear Filters
-          </button>
-        </div>
+        {isFilterExpanded && (
+          <div className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+              {/* Role Filter */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <i className="ri-user-settings-line mr-1"></i>
+                  Role
+                </label>
+                <select
+                  value={filters.role}
+                  onChange={(e) => handleFilterChange("role", e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                >
+                  <option value="">All Roles</option>
+                  <option value="admin">👑 Administrator</option>
+                  <option value="procurement_officer">
+                    🛒 Procurement Officer
+                  </option>
+                  <option value="department_head">🏢 Department Head</option>
+                  <option value="supplier">🏭 Supplier</option>
+                </select>
+              </div>
+
+              {/* Status Filter */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <i className="ri-pulse-line mr-1"></i>
+                  Status
+                </label>
+                <select
+                  value={filters.is_active}
+                  onChange={(e) =>
+                    handleFilterChange("is_active", e.target.value)
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                >
+                  <option value="">All Statuses</option>
+                  <option value="true">✅ Active</option>
+                  <option value="false">❌ Inactive</option>
+                </select>
+              </div>
+
+              {/* Department Filter */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <i className="ri-building-line mr-1"></i>
+                  Department
+                </label>
+                <select
+                  value={filters.department}
+                  onChange={(e) =>
+                    handleFilterChange("department", e.target.value)
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                >
+                  <option value="">All Departments</option>
+                  <option value="HR">👥 HR</option>
+                  <option value="Finance">💰 Finance</option>
+                  <option value="IT">💻 IT</option>
+                  <option value="Procurement">🛒 Procurement</option>
+                  <option value="Operations">⚙️ Operations</option>
+                  <option value="Marketing">📢 Marketing</option>
+                  <option value="Sales">📊 Sales</option>
+                  <option value="Legal">⚖️ Legal</option>
+                  <option value="Admin">🏛️ Admin</option>
+                </select>
+              </div>
+
+              {/* Search Filter */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <i className="ri-search-line mr-1"></i>
+                  Search
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder="Search by name or email..."
+                    value={searchTerm}
+                    onChange={(e) =>
+                      handleFilterChange("search", e.target.value)
+                    }
+                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                  />
+                  <i className="ri-search-line absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                  {searchTerm && (
+                    <button
+                      onClick={() => handleFilterChange("search", "")}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    >
+                      <i className="ri-close-line"></i>
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Active Filters Display */}
+            {getActiveFilterCount() > 0 && (
+              <div className="border-t border-gray-200 pt-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex flex-wrap gap-2">
+                    <span className="text-sm text-gray-600">
+                      Active filters:
+                    </span>
+                    {filters.role && (
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                        Role: {filters.role.replace("_", " ")}
+                        <button
+                          onClick={() => handleFilterChange("role", "")}
+                          className="ml-1.5 hover:text-purple-900"
+                        >
+                          <i className="ri-close-line"></i>
+                        </button>
+                      </span>
+                    )}
+                    {filters.is_active && (
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                        Status:{" "}
+                        {filters.is_active === "true" ? "Active" : "Inactive"}
+                        <button
+                          onClick={() => handleFilterChange("is_active", "")}
+                          className="ml-1.5 hover:text-green-900"
+                        >
+                          <i className="ri-close-line"></i>
+                        </button>
+                      </span>
+                    )}
+                    {filters.department && (
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                        Department: {filters.department}
+                        <button
+                          onClick={() => handleFilterChange("department", "")}
+                          className="ml-1.5 hover:text-blue-900"
+                        >
+                          <i className="ri-close-line"></i>
+                        </button>
+                      </span>
+                    )}
+                    {filters.search && (
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                        Search: "{filters.search}"
+                        <button
+                          onClick={() => handleFilterChange("search", "")}
+                          className="ml-1.5 hover:text-yellow-900"
+                        >
+                          <i className="ri-close-line"></i>
+                        </button>
+                      </span>
+                    )}
+                  </div>
+                  <button
+                    onClick={clearFilters}
+                    className="text-sm text-gray-500 hover:text-gray-700 font-medium transition-colors"
+                  >
+                    <i className="ri-refresh-line mr-1"></i>
+                    Clear All
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
       {/* Error Display */}
       {error && (
