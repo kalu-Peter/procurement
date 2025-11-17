@@ -18,6 +18,11 @@ if (!isset($_FILES['excel_file'])) {
     exit;
 }
 
+// Get user information for department-based access control
+$user_role = $_POST['user_role'] ?? '';
+$user_department = $_POST['user_department'] ?? '';
+$is_restricted_user = ($user_role !== 'admin' && $user_department !== 'Procurement' && !empty($user_department));
+
 try {
     $spreadsheet = IOFactory::load($_FILES['excel_file']['tmp_name']);
     $sheet = $spreadsheet->getActiveSheet();
@@ -30,18 +35,42 @@ try {
     // Skip header row (assuming first row contains headers)
     for ($i = 1; $i < count($rows); $i++) {
         $row = $rows[$i];
-        
+
         // Skip empty rows
         if (empty(array_filter($row))) {
+            continue;
+        }
+
+        // Extract department from the row
+        $asset_department = $row[3] ?? '';
+
+        // Validate department access for restricted users
+        if ($is_restricted_user) {
+            if (empty($asset_department) || $asset_department !== $user_department) {
+                // For restricted users, force assets to be in their department
+                $asset_department = $user_department;
+            }
+        }
+
+        // Validate required fields
+        if (empty($row[1])) { // Name is required
+            $failed++;
+            $errors[] = "Row " . ($i + 1) . ": Asset name is required";
+            continue;
+        }
+
+        if (empty($asset_department)) {
+            $failed++;
+            $errors[] = "Row " . ($i + 1) . ": Department is required";
             continue;
         }
 
         // Generate UUID for asset ID
         $asset_id = bin2hex(random_bytes(16));
         $asset_id = substr($asset_id, 0, 8) . '-' . substr($asset_id, 8, 4) . '-' . substr($asset_id, 12, 4) . '-' . substr($asset_id, 16, 4) . '-' . substr($asset_id, 20);
-        
+
         $created_at = date('Y-m-d H:i:s');
-        
+
         // Map Excel columns to database fields
         $query = "INSERT INTO assets (
             id, asset_tag, name, category, department, description,
@@ -54,7 +83,7 @@ try {
             $row[0] ?? '', // Asset Tag (auto-generated if empty)
             $row[1] ?? '', // Name
             $row[2] ?? '', // Category
-            $row[3] ?? '', // Department
+            $asset_department, // Department (validated)
             $row[4] ?? null, // Description
             !empty($row[5]) ? $row[5] : null, // Purchase Date
             !empty($row[6]) ? floatval($row[6]) : null, // Purchase Price
@@ -70,7 +99,7 @@ try {
         ];
 
         $result = pg_query_params($con, $query, $params);
-        
+
         if ($result) {
             $imported++;
         } else {
@@ -85,7 +114,6 @@ try {
         'failed' => $failed,
         'errors' => $errors
     ]);
-
 } catch (Exception $e) {
     echo json_encode([
         'success' => false,
@@ -94,4 +122,3 @@ try {
 }
 
 pg_close($con);
-?>

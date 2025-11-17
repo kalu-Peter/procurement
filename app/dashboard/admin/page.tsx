@@ -119,7 +119,7 @@ export default function AdminDashboard() {
           </Link>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
           <div className="bg-white rounded-lg shadow-lg p-6">
             <h2 className="text-xl font-semibold mb-4 text-gray-800">
               Asset Management
@@ -142,6 +142,32 @@ export default function AdminDashboard() {
                 className="block bg-gray-100 text-gray-700 px-4 py-2 rounded hover:bg-gray-200 text-center transition-colors"
               >
                 Import Assets
+              </Link>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg shadow-lg p-6">
+            <h2 className="text-xl font-semibold mb-4 text-gray-800">
+              Asset Requests
+            </h2>
+            <div className="space-y-4">
+              <Link
+                href="/dashboard/admin/requests"
+                className="block bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600 text-center transition-colors"
+              >
+                Review Requests
+              </Link>
+              <Link
+                href="/dashboard/admin/requests?status=pending"
+                className="block bg-gray-100 text-gray-700 px-4 py-2 rounded hover:bg-gray-200 text-center transition-colors"
+              >
+                Pending Requests
+              </Link>
+              <Link
+                href="/dashboard/admin/requests?status=approved"
+                className="block bg-gray-100 text-gray-700 px-4 py-2 rounded hover:bg-gray-200 text-center transition-colors"
+              >
+                Approved Requests
               </Link>
             </div>
           </div>
@@ -191,21 +217,23 @@ export default function AdminDashboard() {
               </Link>
             </div>
           </div>
+        </div>
 
+        <div className="grid grid-cols-1 md:grid-cols-1 gap-6">
           <div className="bg-white rounded-lg shadow-lg p-6">
             <h2 className="text-xl font-semibold mb-4 text-gray-800">
               Transfer Management
             </h2>
-            <div className="space-y-4">
+            <div className="flex space-x-4">
               <Link
                 href="/transfers/new"
-                className="block bg-orange-500 text-white px-4 py-2 rounded hover:bg-orange-600 text-center transition-colors"
+                className="bg-orange-500 text-white px-4 py-2 rounded hover:bg-orange-600 text-center transition-colors"
               >
                 Create Transfer
               </Link>
               <Link
                 href="/transfers"
-                className="block bg-gray-100 text-gray-700 px-4 py-2 rounded hover:bg-gray-200 text-center transition-colors"
+                className="bg-gray-100 text-gray-700 px-4 py-2 rounded hover:bg-gray-200 text-center transition-colors"
               >
                 View Transfers
               </Link>

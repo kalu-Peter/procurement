@@ -16,10 +16,22 @@ $category = isset($_GET['category']) ? $_GET['category'] : '';
 $department = isset($_GET['department']) ? $_GET['department'] : '';
 $status = isset($_GET['status']) ? $_GET['status'] : '';
 
+// Get user information for department-based filtering
+$user_role = isset($_GET['user_role']) ? $_GET['user_role'] : '';
+$user_department = isset($_GET['user_department']) ? $_GET['user_department'] : '';
+
 // Build the query with filters
 $query = "SELECT * FROM assets WHERE (status IS NULL OR status != 'Deleted')";
 $params = [];
 $param_types = [];
+
+// Apply department-based access control
+// Admin and procurement department users can see all assets
+// Other users can only see assets from their department
+if ($user_role !== 'admin' && $user_department !== 'Procurement' && !empty($user_department)) {
+    $query .= " AND department = $" . (count($params) + 1);
+    $params[] = $user_department;
+}
 
 if (!empty($search)) {
     $query .= " AND (name ILIKE $" . (count($params) + 1) . " OR asset_tag ILIKE $" . (count($params) + 2) . ")";
@@ -66,8 +78,12 @@ while ($row = pg_fetch_assoc($result)) {
 
 echo json_encode([
     'success' => true,
-    'assets' => $assets
+    'assets' => $assets,
+    'access_info' => [
+        'user_role' => $user_role,
+        'user_department' => $user_department,
+        'restricted_access' => ($user_role !== 'admin' && $user_department !== 'Procurement')
+    ]
 ]);
 
 pg_close($con);
-?>

@@ -22,6 +22,26 @@ if (!$data) {
     exit;
 }
 
+// Get user information for department-based access control
+$user_role = $data['user_role'] ?? '';
+$user_department = $data['user_department'] ?? '';
+
+// Validate department access
+if ($user_role !== 'admin' && $user_department !== 'Procurement' && !empty($user_department)) {
+    // Non-admin, non-procurement users can only create assets for their department
+    if (isset($data['department']) && $data['department'] !== $user_department) {
+        echo json_encode([
+            'success' => false,
+            'error' => 'Access denied. You can only create assets for your department: ' . $user_department
+        ]);
+        exit;
+    }
+    // If department is not set, default to user's department
+    if (!isset($data['department']) || empty($data['department'])) {
+        $data['department'] = $user_department;
+    }
+}
+
 // Generate UUID for asset ID
 $asset_id = bin2hex(random_bytes(16));
 $asset_id = substr($asset_id, 0, 8) . '-' . substr($asset_id, 8, 4) . '-' . substr($asset_id, 12, 4) . '-' . substr($asset_id, 16, 4) . '-' . substr($asset_id, 20);
