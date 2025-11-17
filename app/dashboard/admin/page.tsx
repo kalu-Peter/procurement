@@ -119,7 +119,7 @@ export default function AdminDashboard() {
           </Link>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           <div className="bg-white rounded-lg shadow-lg p-6">
             <h2 className="text-xl font-semibold mb-4 text-gray-800">
               Asset Management
@@ -142,6 +142,32 @@ export default function AdminDashboard() {
                 className="block bg-gray-100 text-gray-700 px-4 py-2 rounded hover:bg-gray-200 text-center transition-colors"
               >
                 Import Assets
+              </Link>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg shadow-lg p-6">
+            <h2 className="text-xl font-semibold mb-4 text-gray-800">
+              User Management
+            </h2>
+            <div className="space-y-4">
+              <Link
+                href="/dashboard/admin/users/register"
+                className="block bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 text-center transition-colors"
+              >
+                Register New User
+              </Link>
+              <Link
+                href="/dashboard/admin/users"
+                className="block bg-gray-100 text-gray-700 px-4 py-2 rounded hover:bg-gray-200 text-center transition-colors"
+              >
+                Manage Users
+              </Link>
+              <Link
+                href="/suppliers-list"
+                className="block bg-gray-100 text-gray-700 px-4 py-2 rounded hover:bg-gray-200 text-center transition-colors"
+              >
+                Manage Suppliers
               </Link>
             </div>
           </div>
@@ -173,7 +199,7 @@ export default function AdminDashboard() {
             <div className="space-y-4">
               <Link
                 href="/transfers/new"
-                className="block bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 text-center transition-colors"
+                className="block bg-orange-500 text-white px-4 py-2 rounded hover:bg-orange-600 text-center transition-colors"
               >
                 Create Transfer
               </Link>
