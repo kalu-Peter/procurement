@@ -497,10 +497,13 @@ export default function AdminRequestsPage() {
                                   </button>
                                 </>
                               )}
-                              <button className="text-blue-600 hover:text-blue-800 text-sm">
+                              <Link
+                                href={`/requests/${request.id}`}
+                                className="text-blue-600 hover:text-blue-800 text-sm"
+                              >
                                 <i className="ri-eye-line mr-1"></i>
                                 View
-                              </button>
+                              </Link>
                             </div>
                           </td>
                         </tr>

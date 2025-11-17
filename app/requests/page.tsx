@@ -294,10 +294,13 @@ export default function RequestsPage() {
                             {new Date(request.created_at).toLocaleDateString()}
                           </td>
                           <td className="px-6 py-4">
-                            <button className="text-blue-600 hover:text-blue-800 text-sm">
+                            <Link
+                              href={`/requests/${request.id}`}
+                              className="text-blue-600 hover:text-blue-800 text-sm"
+                            >
                               <i className="ri-eye-line mr-1"></i>
                               View Details
-                            </button>
+                            </Link>
                           </td>
                         </tr>
                       ))

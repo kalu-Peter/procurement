@@ -1,9 +1,8 @@
 {
-  "/requests/new/page": "app/requests/new/page.js",
-  "/page": "app/page.js",
   "/requests/page": "app/requests/page.js",
-  "/dashboard/admin/page": "app/dashboard/admin/page.js",
+  "/requests/[id]/page": "app/requests/[id]/page.js",
   "/login/page": "app/login/page.js",
-  "/dashboard/department/page": "app/dashboard/department/page.js",
-  "/dashboard/admin/requests/page": "app/dashboard/admin/requests/page.js"
+  "/dashboard/admin/page": "app/dashboard/admin/page.js",
+  "/dashboard/admin/requests/page": "app/dashboard/admin/requests/page.js",
+  "/dashboard/department/page": "app/dashboard/department/page.js"
 }
