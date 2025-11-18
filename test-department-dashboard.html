@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Department Dashboard Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .stat-card { border: 1px solid #ccc; padding: 20px; margin: 10px; border-radius: 5px; display: inline-block; width: 200px; }
+        .stat-number { font-size: 24px; font-weight: bold; color: #333; }
+        .stat-label { color: #666; font-size: 14px; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>Department Dashboard API Test</h1>
+    
+    <div>
+        <button onclick="testDepartmentStats()">Test Department Stats</button>
+        <button onclick="clearData()">Clear Data</button>
+    </div>
+    
+    <div id="results"></div>
+
+    <script>
+        async function testDepartmentStats() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<p>Loading...</p>';
+            
+            try {
+                // Mock user
+                const user = {
+                    id: 'test-dept-head-id',
+                    role: 'department_head',
+                    department: 'IT',
+                    name: 'Test Department Head'
+                };
+                
+                // Fetch asset requests statistics
+                const assetRequestsRes = await fetch(
+                    `http://localhost:8000/api/asset-requests/index.php?user_role=${user.role}&department=${user.department}`
+                );
+                const assetRequestsData = await assetRequestsRes.json();
+
+                // Fetch transfer requests statistics  
+                const transfersRes = await fetch(
+                    `http://localhost:8000/api/transfer/index.php`
+                );
+                const transfersData = await transfersRes.json();
+
+                // Fetch disposal requests statistics
+                const disposalsRes = await fetch(
+                    `http://localhost:8000/api/disposals/index.php?type=requests&department=${user.department}`
+                );
+                const disposalsData = await disposalsRes.json();
+
+                // Fetch department assets count
+                const assetsRes = await fetch(
+                    `http://localhost:8000/api/assets/index.php?user_role=${user.role}&user_department=${user.department}&department=${user.department}`
+                );
+                const assetsData = await assetsRes.json();
+
+                // Filter transfers and disposals by department
+                const departmentTransfers = transfersData.success 
+                    ? transfersData.transfers.filter(transfer => 
+                        transfer.from_department === user.department || 
+                        transfer.to_department === user.department
+                      ) 
+                    : [];
+
+                const departmentDisposals = disposalsData.success ? disposalsData.disposals : [];
+
+                // Calculate active requests (pending status)
+                const pendingAssetRequests = assetRequestsData.stats?.pending || 0;
+                const pendingTransfers = departmentTransfers.filter(t => t.status === 'pending').length;
+                const pendingDisposals = departmentDisposals.filter(d => d.status === 'Pending').length;
+
+                // Calculate pending approvals (same as active for department head view)
+                const activeRequests = pendingAssetRequests + pendingTransfers + pendingDisposals;
+                const pendingApprovals = activeRequests;
+
+                // Get total department assets
+                const totalAssets = assetsData.success ? assetsData.assets.length : 0;
+
+                // Display results
+                resultsDiv.innerHTML = `
+                    <h2>Department Dashboard Stats for ${user.department}</h2>
+                    <div>
+                        <div class="stat-card" style="background-color: #3b82f6; color: white;">
+                            <div class="stat-number">${totalAssets}</div>
+                            <div class="stat-label">Department Assets</div>
+                            <div style="font-size: 12px; margin-top: 5px;">Total assets in department</div>
+                        </div>
+                        
+                        <div class="stat-card" style="background-color: #10b981; color: white;">
+                            <div class="stat-number">${activeRequests}</div>
+                            <div class="stat-label">Active Requests</div>
+                            <div style="font-size: 12px; margin-top: 5px;">Pending asset, transfer & disposal requests</div>
+                        </div>
+                        
+                        <div class="stat-card" style="background-color: #f97316; color: white;">
+                            <div class="stat-number">${pendingApprovals}</div>
+                            <div class="stat-label">Pending Approvals</div>
+                            <div style="font-size: 12px; margin-top: 5px;">Requests awaiting approval</div>
+                        </div>
+                    </div>
+                    
+                    <h3>Breakdown:</h3>
+                    <ul>
+                        <li><strong>Asset Requests (Pending):</strong> ${pendingAssetRequests}</li>
+                        <li><strong>Transfer Requests (Pending):</strong> ${pendingTransfers}</li>
+                        <li><strong>Disposal Requests (Pending):</strong> ${pendingDisposals}</li>
+                        <li><strong>Total Department Transfers:</strong> ${departmentTransfers.length}</li>
+                        <li><strong>Total Department Disposals:</strong> ${departmentDisposals.length}</li>
+                    </ul>
+                    
+                    <h3>Raw API Data:</h3>
+                    <details>
+                        <summary>Asset Requests Data</summary>
+                        <pre>${JSON.stringify(assetRequestsData, null, 2)}</pre>
+                    </details>
+                    <details>
+                        <summary>Transfers Data</summary>
+                        <pre>${JSON.stringify(transfersData, null, 2)}</pre>
+                    </details>
+                    <details>
+                        <summary>Disposals Data</summary>
+                        <pre>${JSON.stringify(disposalsData, null, 2)}</pre>
+                    </details>
+                    <details>
+                        <summary>Assets Data</summary>
+                        <pre>${JSON.stringify(assetsData, null, 2)}</pre>
+                    </details>
+                `;
+                
+            } catch (error) {
+                console.error('Error fetching stats:', error);
+                resultsDiv.innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
+            }
+        }
+        
+        function clearData() {
+            document.getElementById('results').innerHTML = '';
+        }
+    </script>
+</body>
+</html>
