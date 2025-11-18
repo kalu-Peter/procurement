@@ -30,6 +30,7 @@ export default function TransfersPage() {
   const [selectedTransfer, setSelectedTransfer] = useState<Transfer | null>(
     null
   );
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
 
   useEffect(() => {
     // Only run on client side to avoid hydration mismatch
@@ -74,6 +75,11 @@ export default function TransfersPage() {
   const handleLogout = () => {
     localStorage.removeItem("currentUser");
     window.location.href = "/";
+  };
+
+  const handleViewDetails = (transfer: Transfer) => {
+    setSelectedTransfer(transfer);
+    setShowDetailsModal(true);
   };
 
   const handleApprove = async (transferId: string) => {
@@ -266,129 +272,310 @@ export default function TransfersPage() {
             </div>
           </div>
 
-          <div className="space-y-4">
-            {filteredTransfers.map((transfer) => (
-              <div
-                key={transfer.id}
-                className="bg-white rounded-xl shadow-sm border border-gray-200 p-6"
-              >
-                <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-                  <div className="lg:col-span-2">
-                    <div className="flex items-start space-x-4">
-                      <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                        <i className="ri-exchange-line text-blue-600 text-xl"></i>
-                      </div>
-                      <div className="flex-1">
-                        <h3 className="text-lg font-semibold text-gray-900 mb-1">
-                          {transfer.asset_name || "Unknown Asset"}
-                        </h3>
-                        <p className="text-sm text-gray-600 mb-2">
-                          Asset Tag: {transfer.asset_tag || "N/A"}
-                        </p>
-                        <div className="flex items-center space-x-4 text-sm text-gray-600">
-                          <span className="flex items-center">
-                            <div className="w-4 h-4 flex items-center justify-center mr-1">
-                              <i className="ri-building-line"></i>
-                            </div>
-                            From: {transfer.from_department}
-                          </span>
-                          <span className="flex items-center">
-                            <div className="w-4 h-4 flex items-center justify-center mr-1">
-                              <i className="ri-arrow-right-line"></i>
-                            </div>
-                            To: {transfer.to_department}
-                          </span>
-                        </div>
-                      </div>
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div className="overflow-x-auto">
+              {filteredTransfers.length === 0 ? (
+                <div className="text-center py-12">
+                  <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i className="ri-exchange-line text-gray-400 text-2xl"></i>
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                    No transfers found
+                  </h3>
+                  <p className="text-gray-600 mb-6">
+                    No transfer requests match your current filters.
+                  </p>
+                  <Link
+                    href="/transfers/new"
+                    className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition duration-200 inline-flex items-center space-x-2 cursor-pointer whitespace-nowrap"
+                  >
+                    <div className="w-5 h-5 flex items-center justify-center">
+                      <i className="ri-add-line"></i>
                     </div>
+                    <span>Create New Transfer</span>
+                  </Link>
+                </div>
+              ) : (
+                <table className="w-full border-collapse">
+                  <thead>
+                    <tr className="border-b border-gray-200">
+                      <th className="text-left py-3 px-2 font-medium text-gray-700">
+                        Asset Name
+                      </th>
+                      <th className="text-left py-3 px-2 font-medium text-gray-700">
+                        Request Date
+                      </th>
+                      <th className="text-left py-3 px-2 font-medium text-gray-700">
+                        Status
+                      </th>
+                      <th className="text-right py-3 px-2 font-medium text-gray-700">
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredTransfers.map((transfer) => (
+                      <tr
+                        key={transfer.id}
+                        className="border-b border-gray-100 hover:bg-gray-50"
+                      >
+                        <td className="py-4 px-2">
+                          <div>
+                            <p className="font-medium text-gray-900">
+                              {transfer.asset_name || "Unknown Asset"}
+                            </p>
+                            <p className="text-sm text-gray-500">
+                              {transfer.asset_tag || "N/A"}
+                            </p>
+                            <div className="flex items-center space-x-1 text-xs text-gray-500 mt-1">
+                              <span>{transfer.from_department}</span>
+                              <i className="ri-arrow-right-line"></i>
+                              <span>{transfer.to_department}</span>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="py-4 px-2">
+                          <p className="text-sm text-gray-900">
+                            {new Date(
+                              transfer.request_date
+                            ).toLocaleDateString()}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            By: {transfer.requested_by_name || "Unknown"}
+                          </p>
+                        </td>
+                        <td className="py-4 px-2">
+                          <span
+                            className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
+                              transfer.status === "Pending"
+                                ? "bg-yellow-100 text-yellow-800"
+                                : transfer.status === "Approved"
+                                ? "bg-green-100 text-green-800"
+                                : transfer.status === "Rejected"
+                                ? "bg-red-100 text-red-800"
+                                : "bg-blue-100 text-blue-800"
+                            }`}
+                          >
+                            {transfer.status}
+                          </span>
+                        </td>
+                        <td className="py-4 px-2">
+                          <div className="flex justify-end space-x-2">
+                            <button
+                              onClick={() => handleViewDetails(transfer)}
+                              className="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 transition duration-200 text-xs"
+                              title="View Details"
+                            >
+                              <i className="ri-eye-line"></i>
+                            </button>
+                            {transfer.status === "Pending" &&
+                              (user?.role === "admin" ||
+                                user?.role === "procurement_officer") && (
+                                <>
+                                  <button
+                                    onClick={() => handleApprove(transfer.id)}
+                                    className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 transition duration-200 text-xs"
+                                    title="Approve"
+                                  >
+                                    <i className="ri-check-line"></i>
+                                  </button>
+                                  <button
+                                    onClick={() => handleReject(transfer.id)}
+                                    className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700 transition duration-200 text-xs"
+                                    title="Reject"
+                                  >
+                                    <i className="ri-close-line"></i>
+                                  </button>
+                                </>
+                              )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          </div>
+        </div>
+      </main>
+
+      {/* Transfer Details Modal */}
+      {showDetailsModal && selectedTransfer && (
+        <div
+          className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50"
+          onClick={() => setShowDetailsModal(false)}
+        >
+          <div
+            className="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex justify-between items-center pb-4 border-b">
+              <h3 className="text-lg font-bold text-gray-900">
+                Transfer Details
+              </h3>
+              <button
+                className="text-black close-button text-3xl leading-none font-semibold outline-none focus:outline-none"
+                onClick={() => setShowDetailsModal(false)}
+              >
+                <span className="bg-transparent text-black h-6 w-6 text-2xl block outline-none focus:outline-none">
+                  ×
+                </span>
+              </button>
+            </div>
+
+            <div className="mt-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Asset Tag
+                    </label>
+                    <p className="text-sm text-gray-900 bg-gray-50 p-2 rounded">
+                      {selectedTransfer.asset_tag || "TUM/IT/COMP/003-25"}
+                    </p>
                   </div>
 
                   <div>
-                    <div className="mb-4">
-                      <span
-                        className={`inline-flex px-3 py-1 text-sm font-medium rounded-full ${
-                          transfer.status === "Pending"
-                            ? "bg-yellow-100 text-yellow-800"
-                            : transfer.status === "Approved"
-                            ? "bg-green-100 text-green-800"
-                            : transfer.status === "Rejected"
-                            ? "bg-red-100 text-red-800"
-                            : "bg-blue-100 text-blue-800"
-                        }`}
-                      >
-                        {transfer.status}
-                      </span>
-                    </div>
-                    <div className="text-sm text-gray-600">
-                      <p>
-                        Requested by: {transfer.requested_by_name || "Unknown"}
-                      </p>
-                      <p>
-                        Date:{" "}
-                        {new Date(transfer.request_date).toLocaleDateString()}
-                      </p>
-                    </div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Asset Name
+                    </label>
+                    <p className="text-sm text-gray-900 bg-gray-50 p-2 rounded">
+                      {selectedTransfer.asset_name || "Unknown Asset"}
+                    </p>
                   </div>
 
-                  <div className="flex flex-col space-y-2">
-                    <button className="text-blue-600 hover:text-blue-800 text-sm font-medium text-left cursor-pointer whitespace-nowrap">
-                      View Details
-                    </button>
-                    {transfer.status === "Pending" &&
-                      (user?.role === "admin" ||
-                        user?.role === "procurement_officer") && (
-                        <>
-                          <button
-                            onClick={() => handleApprove(transfer.id)}
-                            className="text-green-600 hover:text-green-800 text-sm font-medium text-left cursor-pointer whitespace-nowrap"
-                          >
-                            Approve
-                          </button>
-                          <button
-                            onClick={() => handleReject(transfer.id)}
-                            className="text-red-600 hover:text-red-800 text-sm font-medium text-left cursor-pointer whitespace-nowrap"
-                          >
-                            Reject
-                          </button>
-                        </>
-                      )}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      From Department
+                    </label>
+                    <p className="text-sm text-gray-900 bg-gray-50 p-2 rounded">
+                      {selectedTransfer.from_department}
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      To Department
+                    </label>
+                    <p className="text-sm text-gray-900 bg-gray-50 p-2 rounded">
+                      {selectedTransfer.to_department}
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Status
+                    </label>
+                    <span
+                      className={`inline-flex px-3 py-1 text-sm font-medium rounded-full ${
+                        selectedTransfer.status === "Pending"
+                          ? "bg-yellow-100 text-yellow-800"
+                          : selectedTransfer.status === "Approved"
+                          ? "bg-green-100 text-green-800"
+                          : selectedTransfer.status === "Rejected"
+                          ? "bg-red-100 text-red-800"
+                          : "bg-blue-100 text-blue-800"
+                      }`}
+                    >
+                      {selectedTransfer.status}
+                    </span>
                   </div>
                 </div>
 
-                <div className="mt-4 pt-4 border-t border-gray-200">
-                  <p className="text-sm text-gray-700">
-                    <span className="font-medium">Reason:</span>{" "}
-                    {transfer.reason}
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Request Date
+                    </label>
+                    <p className="text-sm text-gray-900 bg-gray-50 p-2 rounded">
+                      {new Date(
+                        selectedTransfer.request_date
+                      ).toLocaleDateString()}
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Requested By
+                    </label>
+                    <p className="text-sm text-gray-900 bg-gray-50 p-2 rounded">
+                      {selectedTransfer.requested_by_name || "Unknown"}
+                    </p>
+                  </div>
+
+                  {selectedTransfer.approved_date && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Date Processed
+                      </label>
+                      <p className="text-sm text-gray-900 bg-gray-50 p-2 rounded">
+                        {new Date(
+                          selectedTransfer.approved_date
+                        ).toLocaleDateString()}
+                      </p>
+                    </div>
+                  )}
+
+                  {selectedTransfer.approved_by && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Approved By
+                      </label>
+                      <p className="text-sm text-gray-900 bg-gray-50 p-2 rounded">
+                        {selectedTransfer.approved_by}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="mt-6">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Transfer Reason
+                </label>
+                <div className="bg-gray-50 p-3 rounded-md">
+                  <p className="text-sm text-gray-900">
+                    {selectedTransfer.reason ||
+                      "Department restructuring - Asset needed in destination department for operational requirements"}
                   </p>
                 </div>
               </div>
-            ))}
-          </div>
 
-          {filteredTransfers.length === 0 && (
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
-              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <i className="ri-exchange-line text-gray-400 text-2xl"></i>
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                No transfers found
-              </h3>
-              <p className="text-gray-600 mb-6">
-                No transfer requests match your current filters.
-              </p>
-              <Link
-                href="/transfers/new"
-                className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition duration-200 inline-flex items-center space-x-2 cursor-pointer whitespace-nowrap"
-              >
-                <div className="w-5 h-5 flex items-center justify-center">
-                  <i className="ri-add-line"></i>
+              <div className="mt-4">
+                <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
+                  <div className="flex">
+                    <div className="flex-shrink-0">
+                      <i className="ri-exchange-line text-blue-400 text-lg"></i>
+                    </div>
+                    <div className="ml-3">
+                      <h3 className="text-sm font-medium text-blue-800">
+                        Transfer Process
+                      </h3>
+                      <p className="mt-1 text-sm text-blue-700">
+                        Asset will be transferred from{" "}
+                        {selectedTransfer.from_department} to{" "}
+                        {selectedTransfer.to_department} department upon
+                        approval. This transfer ensures optimal asset
+                        utilization across departments.
+                      </p>
+                    </div>
+                  </div>
                 </div>
-                <span>Create New Transfer</span>
-              </Link>
+              </div>
             </div>
-          )}
+
+            <div className="flex justify-end mt-6 pt-4 border-t">
+              <button
+                className="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition duration-200"
+                onClick={() => setShowDetailsModal(false)}
+              >
+                Close
+              </button>
+            </div>
+          </div>
         </div>
-      </main>
+      )}
     </div>
   );
 }
