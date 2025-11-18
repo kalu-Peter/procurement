@@ -51,7 +51,7 @@ if (empty($admin_id)) {
 }
 
 // First, check if the request exists and is still pending
-$check_query = "SELECT id, status, requester_name, asset_name FROM asset_requests WHERE id = $1";
+$check_query = "SELECT id, status, requester_id, requester_name, asset_name FROM asset_requests WHERE id = $1";
 $check_result = pg_query_params($con, $check_query, [$data['id']]);
 
 if (!$check_result || pg_num_rows($check_result) === 0) {
@@ -99,6 +99,23 @@ if ($action === 'approve') {
 $result = @pg_query_params($con, $query, $params);
 
 if ($result) {
+    // Create notification for the requester
+    $notification_title = $action === 'approve' ? 'Asset Request Approved' : 'Asset Request Rejected';
+    $notification_message = $action === 'approve'
+        ? "Your request for '{$request['asset_name']}' has been approved." . (!empty($admin_notes) ? " Admin notes: {$admin_notes}" : "")
+        : "Your request for '{$request['asset_name']}' has been rejected." . (!empty($admin_notes) ? " Reason: {$admin_notes}" : "");
+
+    $notification_type = $action === 'approve' ? 'request_approved' : 'request_rejected';
+
+    // Insert notification
+    $notif_query = "INSERT INTO notifications 
+                   (user_id, title, message, type, related_id, related_type, created_at, updated_at) 
+                   VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())";
+    $notif_params = [$request['requester_id'], $notification_title, $notification_message, $notification_type, $data['id'], 'asset_request'];
+
+    // Don't fail the main operation if notification fails
+    @pg_query_params($con, $notif_query, $notif_params);
+
     echo json_encode([
         'success' => true,
         'message' => "Request has been {$new_status} successfully",

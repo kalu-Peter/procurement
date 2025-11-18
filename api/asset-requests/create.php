@@ -107,6 +107,25 @@ if ($result) {
 
     if ($id_result && $row = pg_fetch_assoc($id_result)) {
         $request_id = $row['id'];
+
+        // Create notifications for all admin and procurement users
+        $admin_query = "SELECT id FROM users WHERE role IN ('admin', 'procurement_officer')";
+        $admin_result = pg_query($con, $admin_query);
+
+        if ($admin_result) {
+            $notification_title = 'New Asset Request';
+            $notification_message = "{$data['requester_name']} ({$data['requester_department']}) has requested '{$data['asset_name']}' - {$urgency} priority";
+
+            while ($admin = pg_fetch_assoc($admin_result)) {
+                $notif_query = "INSERT INTO notifications 
+                               (user_id, title, message, type, related_id, related_type, created_at, updated_at) 
+                               VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())";
+                $notif_params = [$admin['id'], $notification_title, $notification_message, 'request_created', $request_id, 'asset_request'];
+
+                // Don't fail the main operation if notification fails
+                @pg_query_params($con, $notif_query, $notif_params);
+            }
+        }
     }
 
     echo json_encode([
