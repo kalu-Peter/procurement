@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import Link from "next/link";
@@ -19,23 +19,26 @@ interface Notification {
 
 export default function NotificationsPage() {
   const router = useRouter();
-  const user = getCurrentUser();
+  const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [fetchingNotifications, setFetchingNotifications] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
-    if (!user) {
+    // Get user once on component mount
+    const currentUser = getCurrentUser();
+    if (!currentUser) {
       router.push("/login");
       return;
     }
-    fetchNotifications();
-  }, [user, router]);
+    setUser(currentUser);
+  }, [router]);
 
-  const fetchNotifications = async () => {
+  const fetchNotifications = useCallback(async () => {
     if (!user) return;
 
-    setLoading(true);
+    setFetchingNotifications(true);
     try {
       const response = await fetch(
         `http://localhost:8000/api/notifications/index.php?user_id=${user.id}&user_role=${user.role}&limit=50`
@@ -45,40 +48,53 @@ export default function NotificationsPage() {
       if (data.success) {
         setNotifications(data.notifications);
         setUnreadCount(data.unread_count);
+      } else {
+        console.error("Failed to fetch notifications:", data.error);
       }
     } catch (error) {
       console.error("Error fetching notifications:", error);
     } finally {
+      setFetchingNotifications(false);
       setLoading(false);
     }
-  };
+  }, [user]);
 
-  const markAsRead = async (notificationId: string) => {
-    try {
-      await fetch(`http://localhost:8000/api/notifications/mark-read.php`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          notification_id: notificationId,
-          user_id: user?.id,
-        }),
-      });
-
-      // Update local state
-      setNotifications((prev) =>
-        prev.map((notif) =>
-          notif.id === notificationId ? { ...notif, is_read: true } : notif
-        )
-      );
-      setUnreadCount((prev) => Math.max(0, prev - 1));
-    } catch (error) {
-      console.error("Error marking notification as read:", error);
+  useEffect(() => {
+    // Fetch notifications only when user is available
+    if (user) {
+      fetchNotifications();
     }
-  };
+  }, [user, fetchNotifications]);
 
-  const markAllAsRead = async () => {
+  const markAsRead = useCallback(
+    async (notificationId: string) => {
+      try {
+        await fetch(`http://localhost:8000/api/notifications/mark-read.php`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            notification_id: notificationId,
+            user_id: user?.id,
+          }),
+        });
+
+        // Update local state
+        setNotifications((prev) =>
+          prev.map((notif) =>
+            notif.id === notificationId ? { ...notif, is_read: true } : notif
+          )
+        );
+        setUnreadCount((prev) => Math.max(0, prev - 1));
+      } catch (error) {
+        console.error("Error marking notification as read:", error);
+      }
+    },
+    [user?.id]
+  );
+
+  const markAllAsRead = useCallback(async () => {
     if (!user) return;
 
     try {
@@ -101,7 +117,7 @@ export default function NotificationsPage() {
     } catch (error) {
       console.error("Error marking all notifications as read:", error);
     }
-  };
+  }, [user]);
 
   const getNotificationIcon = (type: string) => {
     switch (type) {
@@ -137,19 +153,22 @@ export default function NotificationsPage() {
     }
   };
 
-  const handleNotificationClick = (notification: Notification) => {
-    if (!notification.is_read) {
-      markAsRead(notification.id);
-    }
+  const handleNotificationClick = useCallback(
+    (notification: Notification) => {
+      if (!notification.is_read) {
+        markAsRead(notification.id);
+      }
 
-    // Navigate to related item if available
-    if (
-      notification.related_type === "asset_request" &&
-      notification.related_id
-    ) {
-      router.push(`/requests/${notification.related_id}`);
-    }
-  };
+      // Navigate to related item if available
+      if (
+        notification.related_type === "asset_request" &&
+        notification.related_id
+      ) {
+        router.push(`/requests/${notification.related_id}`);
+      }
+    },
+    [markAsRead, router]
+  );
 
   if (loading) {
     return (
@@ -177,6 +196,18 @@ export default function NotificationsPage() {
             )}
           </div>
           <div className="flex space-x-4">
+            <button
+              onClick={() => fetchNotifications()}
+              disabled={fetchingNotifications}
+              className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 transition-colors disabled:opacity-50 flex items-center space-x-2"
+            >
+              <i
+                className={`ri-refresh-line ${
+                  fetchingNotifications ? "animate-spin" : ""
+                }`}
+              ></i>
+              <span>{fetchingNotifications ? "Refreshing..." : "Refresh"}</span>
+            </button>
             {unreadCount > 0 && (
               <button
                 onClick={markAllAsRead}
@@ -193,6 +224,13 @@ export default function NotificationsPage() {
             </Link>
           </div>
         </div>
+
+        {fetchingNotifications && !loading && (
+          <div className="mb-4 bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded flex items-center">
+            <i className="ri-loader-4-line animate-spin mr-2"></i>
+            Refreshing notifications...
+          </div>
+        )}
 
         {notifications.length === 0 ? (
           <div className="bg-white rounded-lg shadow-lg p-12 text-center">

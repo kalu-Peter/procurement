@@ -1,7 +1,7 @@
 {
   "/notifications/page": "app/notifications/page.js",
-  "/transfers/page": "app/transfers/page.js",
-  "/dashboard/department/page": "app/dashboard/department/page.js",
+  "/page": "app/page.js",
   "/login/page": "app/login/page.js",
-  "/dashboard/admin/page": "app/dashboard/admin/page.js"
+  "/dashboard/admin/page": "app/dashboard/admin/page.js",
+  "/dashboard/admin/requests/page": "app/dashboard/admin/requests/page.js"
 }

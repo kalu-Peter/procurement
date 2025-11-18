@@ -202,8 +202,6 @@ export default function AdminRequestsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header user={user} onLogout={handleLogout} />
-
       {/* Notification */}
       {notification.show && (
         <div

@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
 
 interface PublicNavProps {
   currentPage?: "home" | "about" | "login" | "supplier-registration";
@@ -30,13 +29,7 @@ export default function PublicNav({ currentPage = "home" }: PublicNavProps) {
           {/* Logo */}
           <div className="flex items-center">
             <Link href="/" className="flex items-center space-x-2">
-              <Image
-                src="/logo.png"
-                alt="Logo"
-                width={40}
-                height={40}
-                className="h-10 w-auto"
-              />
+              <img src="/logo.png" alt="Logo" className="h-10 w-auto" />
               <span className="text-2xl font-bold text-gray-800 font-pacifico"></span>
             </Link>
           </div>
