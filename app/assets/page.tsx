@@ -34,6 +34,8 @@ export default function AssetsPage() {
   const [filterCategory, setFilterCategory] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
   const [accessInfo, setAccessInfo] = useState<any>(null);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
 
   useEffect(() => {
     fetchAssets();
@@ -77,6 +79,11 @@ export default function AssetsPage() {
   const handleLogout = () => {
     localStorage.removeItem("currentUser");
     window.location.href = "/";
+  };
+
+  const handleViewDetails = (asset: Asset) => {
+    setSelectedAsset(asset);
+    setShowDetailsModal(true);
   };
 
   if (!user) {
@@ -342,14 +349,15 @@ export default function AssetsPage() {
                           </td>
                           <td className="px-6 py-4">
                             <div className="flex space-x-2">
-                              <Link
-                                href={`/assets/${asset.id}`}
+                              <button
+                                onClick={() => handleViewDetails(asset)}
                                 className="text-blue-600 hover:text-blue-800 cursor-pointer"
+                                title="View Details"
                               >
                                 <div className="w-5 h-5 flex items-center justify-center">
                                   <i className="ri-eye-line"></i>
                                 </div>
-                              </Link>
+                              </button>
                               <Link
                                 href={`/assets/${asset.id}/edit`}
                                 className="text-green-600 hover:text-green-800 cursor-pointer"
@@ -395,6 +403,243 @@ export default function AssetsPage() {
           </div>
         </div>
       </main>
+
+      {/* Asset Details Modal */}
+      {showDetailsModal && selectedAsset && (
+        <div
+          className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50"
+          onClick={() => setShowDetailsModal(false)}
+        >
+          <div
+            className="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-2/3 xl:w-1/2 shadow-lg rounded-md bg-white"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex justify-between items-center pb-4 border-b">
+              <h3 className="text-lg font-bold text-gray-900">Asset Details</h3>
+              <button
+                className="text-black close-button text-3xl leading-none font-semibold outline-none focus:outline-none"
+                onClick={() => setShowDetailsModal(false)}
+              >
+                <span className="bg-transparent text-black h-6 w-6 text-2xl block outline-none focus:outline-none">
+                  ×
+                </span>
+              </button>
+            </div>
+
+            <div className="mt-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Asset Tag
+                    </label>
+                    <p className="text-sm text-gray-900 bg-gray-50 p-2 rounded">
+                      {selectedAsset.asset_tag}
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Asset Name
+                    </label>
+                    <p className="text-sm text-gray-900 bg-gray-50 p-2 rounded">
+                      {selectedAsset.name}
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Category
+                    </label>
+                    <p className="text-sm text-gray-900 bg-gray-50 p-2 rounded">
+                      {selectedAsset.category}
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Department
+                    </label>
+                    <p className="text-sm text-gray-900 bg-gray-50 p-2 rounded">
+                      {selectedAsset.department}
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Brand
+                    </label>
+                    <p className="text-sm text-gray-900 bg-gray-50 p-2 rounded">
+                      {selectedAsset.brand || "N/A"}
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Model
+                    </label>
+                    <p className="text-sm text-gray-900 bg-gray-50 p-2 rounded">
+                      {selectedAsset.model || "N/A"}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Serial Number
+                    </label>
+                    <p className="text-sm text-gray-900 bg-gray-50 p-2 rounded">
+                      {selectedAsset.serial_number || "N/A"}
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Location
+                    </label>
+                    <p className="text-sm text-gray-900 bg-gray-50 p-2 rounded">
+                      {selectedAsset.location || "N/A"}
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Condition
+                    </label>
+                    <span
+                      className={`inline-flex px-3 py-1 text-sm font-medium rounded-full ${
+                        selectedAsset.condition === "Excellent"
+                          ? "bg-green-100 text-green-800"
+                          : selectedAsset.condition === "Good"
+                          ? "bg-blue-100 text-blue-800"
+                          : selectedAsset.condition === "Fair"
+                          ? "bg-yellow-100 text-yellow-800"
+                          : selectedAsset.condition === "Poor"
+                          ? "bg-orange-100 text-orange-800"
+                          : selectedAsset.condition === "Obsolete"
+                          ? "bg-red-100 text-red-800"
+                          : "bg-gray-100 text-gray-800"
+                      }`}
+                    >
+                      {selectedAsset.condition || "Unknown"}
+                    </span>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Status
+                    </label>
+                    <span
+                      className={`inline-flex px-3 py-1 text-sm font-medium rounded-full ${
+                        selectedAsset.status === "Active"
+                          ? "bg-green-100 text-green-800"
+                          : selectedAsset.status === "Disposed"
+                          ? "bg-red-100 text-red-800"
+                          : selectedAsset.status === "Transferred"
+                          ? "bg-blue-100 text-blue-800"
+                          : selectedAsset.status === "Pending Disposal" ||
+                            selectedAsset.status === "Disposal Pending"
+                          ? "bg-orange-100 text-orange-800"
+                          : "bg-yellow-100 text-yellow-800"
+                      }`}
+                    >
+                      {selectedAsset.status || "Unknown"}
+                    </span>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Purchase Date
+                    </label>
+                    <p className="text-sm text-gray-900 bg-gray-50 p-2 rounded">
+                      {selectedAsset.purchase_date
+                        ? new Date(
+                            selectedAsset.purchase_date
+                          ).toLocaleDateString()
+                        : "N/A"}
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Purchase Price
+                    </label>
+                    <p className="text-sm text-gray-900 bg-gray-50 p-2 rounded">
+                      {selectedAsset.purchase_price
+                        ? `$${selectedAsset.purchase_price.toLocaleString()}`
+                        : "N/A"}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {selectedAsset.description && (
+                <div className="mt-6">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Description
+                  </label>
+                  <div className="bg-gray-50 p-3 rounded-md">
+                    <p className="text-sm text-gray-900">
+                      {selectedAsset.description}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Current Value
+                  </label>
+                  <p className="text-sm text-gray-900 bg-gray-50 p-2 rounded">
+                    {selectedAsset.current_value
+                      ? `$${selectedAsset.current_value.toLocaleString()}`
+                      : "N/A"}
+                  </p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Last Updated
+                  </label>
+                  <p className="text-sm text-gray-900 bg-gray-50 p-2 rounded">
+                    {selectedAsset.updated_at
+                      ? new Date(selectedAsset.updated_at).toLocaleDateString()
+                      : "N/A"}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-between mt-6 pt-4 border-t">
+              <div className="flex space-x-3">
+                <Link
+                  href={`/assets/${selectedAsset.id}/edit`}
+                  className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition duration-200 flex items-center space-x-2"
+                  onClick={() => setShowDetailsModal(false)}
+                >
+                  <i className="ri-edit-line"></i>
+                  <span>Edit Asset</span>
+                </Link>
+                <Link
+                  href={`/transfers/new?asset=${selectedAsset.id}`}
+                  className="bg-yellow-600 text-white px-4 py-2 rounded-lg hover:bg-yellow-700 transition duration-200 flex items-center space-x-2"
+                  onClick={() => setShowDetailsModal(false)}
+                >
+                  <i className="ri-exchange-line"></i>
+                  <span>Transfer Asset</span>
+                </Link>
+              </div>
+              <button
+                className="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition duration-200"
+                onClick={() => setShowDetailsModal(false)}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
