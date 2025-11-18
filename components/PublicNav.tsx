@@ -30,7 +30,9 @@ export default function PublicNav({ currentPage = "home" }: PublicNavProps) {
           <div className="flex items-center">
             <Link href="/" className="flex items-center space-x-2">
               <img src="/logo.png" alt="Logo" className="h-10 w-auto" />
-              <span className="text-2xl font-bold text-gray-800 font-pacifico"></span>
+              <span className="text-2xl font-bold text-gray-800 font-pacifico">
+                TUM Procurement
+              </span>
             </Link>
           </div>
 
