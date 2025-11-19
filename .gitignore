@@ -1,3 +1,7 @@
 node_modules
 vendor
-.next
+.next/
+out/
+.cache/
+dist/
+*.pack

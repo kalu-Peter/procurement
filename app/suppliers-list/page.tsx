@@ -132,21 +132,30 @@ export default function SuppliersListPage() {
     fetchSuppliers();
   }, []);
 
+  // Auto-refresh when filters change (debounced)
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      fetchSuppliers();
+    }, 300); // 300ms debounce to avoid too many API calls
+
+    return () => clearTimeout(timeoutId);
+  }, [filters]);
+
   const handleLogout = () => {
     logoutUser();
   };
 
   const handleFilterChange = (key: string, value: string) => {
     setFilters((prev) => ({ ...prev, [key]: value }));
-  };
-
-  const applyFilters = () => {
-    fetchSuppliers();
+    // Show loading for immediate feedback on non-search filters
+    if (key !== "search" || value === "") {
+      setLoading(true);
+    }
   };
 
   const clearFilters = () => {
     setFilters({ status: "", category: "", county: "", search: "" });
-    setTimeout(() => fetchSuppliers(), 100);
+    setLoading(true); // Show loading while clearing
   };
 
   const getStatusBadge = (status: string) => {
@@ -457,7 +466,11 @@ export default function SuppliersListPage() {
               <select
                 value={filters.status}
                 onChange={(e) => handleFilterChange("status", e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${
+                  filters.status
+                    ? "border-blue-500 bg-blue-50"
+                    : "border-gray-300"
+                }`}
               >
                 <option value="">All Statuses</option>
                 <option value="pending">Pending</option>
@@ -473,7 +486,11 @@ export default function SuppliersListPage() {
               <select
                 value={filters.category}
                 onChange={(e) => handleFilterChange("category", e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${
+                  filters.category
+                    ? "border-green-500 bg-green-50"
+                    : "border-gray-300"
+                }`}
               >
                 <option value="">All Categories</option>
                 <option value="General">General</option>
@@ -490,7 +507,11 @@ export default function SuppliersListPage() {
               <select
                 value={filters.county}
                 onChange={(e) => handleFilterChange("county", e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${
+                  filters.county
+                    ? "border-purple-500 bg-purple-50"
+                    : "border-gray-300"
+                }`}
               >
                 <option value="">All Counties</option>
                 {counties.map((county) => (
@@ -505,29 +526,59 @@ export default function SuppliersListPage() {
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Search
               </label>
-              <input
-                type="text"
-                placeholder="Search suppliers..."
-                value={filters.search}
-                onChange={(e) => handleFilterChange("search", e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <i className="ri-search-line text-gray-400"></i>
+                </div>
+                <input
+                  type="text"
+                  placeholder="Search suppliers..."
+                  value={filters.search}
+                  onChange={(e) => handleFilterChange("search", e.target.value)}
+                  className={`w-full pl-10 pr-10 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${
+                    filters.search
+                      ? "border-blue-500 bg-blue-50"
+                      : "border-gray-300"
+                  }`}
+                />
+                {filters.search && (
+                  <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
+                    <button
+                      onClick={() => handleFilterChange("search", "")}
+                      className="text-gray-400 hover:text-gray-600 p-1"
+                      title="Clear search"
+                    >
+                      <i className="ri-close-line"></i>
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
           <div className="flex gap-4">
             <button
-              onClick={applyFilters}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-            >
-              Apply Filters
-            </button>
-            <button
               onClick={clearFilters}
-              className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300"
+              className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 flex items-center space-x-2"
             >
-              Clear Filters
+              <i className="ri-close-line"></i>
+              <span>Clear All Filters</span>
             </button>
+            {(filters.status ||
+              filters.category ||
+              filters.county ||
+              filters.search) && (
+              <div className="flex items-center text-sm text-blue-600 bg-blue-50 px-3 py-2 rounded-md">
+                <i className="ri-filter-line mr-2"></i>
+                <span>
+                  {Object.values(filters).filter((v) => v).length} filter
+                  {Object.values(filters).filter((v) => v).length === 1
+                    ? ""
+                    : "s"}{" "}
+                  active
+                </span>
+              </div>
+            )}
           </div>
         </div>
 
@@ -538,6 +589,58 @@ export default function SuppliersListPage() {
               <i className="ri-error-warning-line text-red-500 mr-2"></i>
               <span className="text-red-700">{error}</span>
             </div>
+          </div>
+        )}
+
+        {/* Results Summary */}
+        {!loading && (
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <h3 className="text-lg font-medium text-gray-900">
+                  {suppliers.length === 0
+                    ? "No suppliers found"
+                    : `Showing ${suppliers.length} supplier${
+                        suppliers.length === 1 ? "" : "s"
+                      }`}
+                </h3>
+                {(filters.status ||
+                  filters.category ||
+                  filters.county ||
+                  filters.search) &&
+                  suppliers.length > 0 && (
+                    <div className="flex items-center text-sm text-blue-600">
+                      <i className="ri-filter-3-line mr-1"></i>
+                      <span>Filtered results</span>
+                    </div>
+                  )}
+              </div>
+
+              {suppliers.length === 0 &&
+                (filters.status ||
+                  filters.category ||
+                  filters.county ||
+                  filters.search) && (
+                  <button
+                    onClick={clearFilters}
+                    className="inline-flex items-center px-3 py-1 border border-transparent text-sm font-medium rounded-md text-blue-600 bg-blue-100 hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  >
+                    <i className="ri-close-line mr-1"></i>
+                    Clear filters
+                  </button>
+                )}
+            </div>
+
+            {suppliers.length === 0 &&
+              (filters.status ||
+                filters.category ||
+                filters.county ||
+                filters.search) && (
+                <div className="mt-3 text-sm text-gray-500">
+                  No suppliers match your current filter criteria. Try adjusting
+                  your filters to see more results.
+                </div>
+              )}
           </div>
         )}
 
