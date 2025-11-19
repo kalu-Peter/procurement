@@ -1,7 +1,7 @@
 {
-  "/disposals/page": "app/disposals/page.js",
-  "/transfers/page": "app/transfers/page.js",
-  "/assets/page": "app/assets/page.js",
-  "/assets/[id]/edit/page": "app/assets/[id]/edit/page.js",
-  "/suppliers-list/page": "app/suppliers-list/page.js"
+  "/page": "app/page.js",
+  "/suppliers-list/page": "app/suppliers-list/page.js",
+  "/login/page": "app/login/page.js",
+  "/about/page": "app/about/page.js",
+  "/suppliers/page": "app/suppliers/page.js"
 }

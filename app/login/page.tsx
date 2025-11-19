@@ -12,6 +12,7 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [showForgotPasswordModal, setShowForgotPasswordModal] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -196,16 +197,51 @@ export default function LoginPage() {
                   >
                     Register here
                   </a>
+                  {" | "}
+                  <button
+                    type="button"
+                    onClick={() => setShowForgotPasswordModal(true)}
+                    className="text-bs-green hover:text-green-700 font-medium cursor-pointer"
+                  >
+                    Forgot Password?
+                  </button>
                 </div>
               </div>
             </form>
-
-            {/* Forgot password component */}
-            <div className="mt-4">
-              <ForgotPassword />
-            </div>
           </div>
         </div>
+
+        {/* Forgot Password Modal */}
+        {showForgotPasswordModal && (
+          <div
+            className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50"
+            onClick={() => setShowForgotPasswordModal(false)}
+          >
+            <div
+              className="relative top-20 mx-auto p-5 border w-11/12 md:w-1/2 lg:w-1/3 shadow-lg rounded-md bg-white"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex justify-between items-center pb-4 border-b">
+                <h3 className="text-lg font-bold text-gray-900">
+                  Forgot Password
+                </h3>
+                <button
+                  className="text-black close-button text-3xl leading-none font-semibold outline-none focus:outline-none"
+                  onClick={() => setShowForgotPasswordModal(false)}
+                >
+                  <span className="bg-transparent text-black h-6 w-6 text-2xl block outline-none focus:outline-none">
+                    ×
+                  </span>
+                </button>
+              </div>
+              <div className="mt-4">
+                <ForgotPassword
+                  onClose={() => setShowForgotPasswordModal(false)}
+                />
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

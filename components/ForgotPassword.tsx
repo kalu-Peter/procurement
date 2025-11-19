@@ -2,7 +2,11 @@
 
 import { useState } from "react";
 
-export default function ForgotPassword() {
+interface ForgotPasswordProps {
+  onClose?: () => void;
+}
+
+export default function ForgotPassword({ onClose }: ForgotPasswordProps) {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -54,9 +58,16 @@ export default function ForgotPassword() {
 
       // data now contains the parsed JSON
       if (res.ok) {
-        setMessage(data.message || "Password has been reset.");
+        setMessage(data.message || "Password has been reset successfully!");
         if (data.new_password) setDebugToken(data.new_password);
         else setDebugToken(newPassword);
+
+        // Auto-close modal after 3 seconds on success
+        if (onClose) {
+          setTimeout(() => {
+            onClose();
+          }, 3000);
+        }
       } else {
         setError(
           data.error || `Failed to reset password (status ${res.status})`
@@ -71,11 +82,12 @@ export default function ForgotPassword() {
   };
 
   return (
-    <div className="mt-6 bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-      <h3 className="text-lg font-medium mb-2">Forgot your password?</h3>
-      <p className="text-sm text-gray-600 mb-4">
-        Enter your email and we'll send instructions to reset your password.
-      </p>
+    <div className="space-y-4">
+      <div>
+        <p className="text-sm text-gray-600 mb-4">
+          Enter your email and new password to reset your account.
+        </p>
+      </div>
 
       {message && <div className="mb-3 text-sm text-green-700">{message}</div>}
       {error && <div className="mb-3 text-sm text-red-700">{error}</div>}
@@ -123,14 +135,23 @@ export default function ForgotPassword() {
           />
         </div>
 
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between space-x-3">
           <button
             type="submit"
             disabled={loading}
-            className="bg-bs-green text-white px-4 py-2 rounded-md hover:bg-green-700 disabled:opacity-50"
+            className="bg-bs-green text-white px-4 py-2 rounded-md hover:bg-green-700 disabled:opacity-50 flex-1"
           >
             {loading ? "Resetting..." : "Reset password"}
           </button>
+          {onClose && (
+            <button
+              type="button"
+              onClick={onClose}
+              className="bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600"
+            >
+              Cancel
+            </button>
+          )}
         </div>
       </form>
 
