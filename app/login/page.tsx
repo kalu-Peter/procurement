@@ -100,14 +100,20 @@ export default function LoginPage() {
 
         <div className="flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
           <div className="max-w-md w-full space-y-8">
-            <div>
-              <h2 className="mt-6 text-center text-3xl font-extrabold text-white">
-                Sign in to your account
-              </h2>
-            </div>
-
             <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
               <div className="bg-white p-8 rounded-lg shadow-sm border border-gray-200">
+                {/* Logo */}
+                <div className="flex justify-center mb-6">
+                  <img src="/logo.png" alt="TUM Logo" className="h-16 w-auto" />
+                </div>
+
+                {/* Welcome Text */}
+                <div className="text-center mb-6">
+                  <p className="text-sm text-gray-600">
+                    Sign in to access TUM Procurement System
+                  </p>
+                </div>
+
                 {error && (
                   <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
                     <div className="flex items-center">
