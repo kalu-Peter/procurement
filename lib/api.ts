@@ -33,10 +33,14 @@ class ApiClient {
   ): Promise<ApiResponse<T>> {
     const url = `${this.baseURL}${endpoint}`;
     
-    const headers: HeadersInit = {
+    const headers: Record<string, string> = {
       'Content-Type': 'application/json',
-      ...options.headers,
     };
+
+    // Add any additional headers
+    if (options.headers) {
+      Object.assign(headers, options.headers);
+    }
 
     if (this.token) {
       headers.Authorization = `Bearer ${this.token}`;
