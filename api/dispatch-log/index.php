@@ -71,7 +71,6 @@ try {
             'dispatch_logs' => $dispatch_logs,
             'count' => count($dispatch_logs)
         ]);
-
     } elseif ($method === 'POST') {
         // Create dispatch log entry
         $data = json_decode(file_get_contents("php://input"), true);
@@ -113,7 +112,6 @@ try {
             'message' => 'Dispatch log created successfully',
             'dispatch_id' => $dispatch_id
         ]);
-
     } elseif ($method === 'PUT') {
         // Update dispatch log status
         $data = json_decode(file_get_contents("php://input"), true);
@@ -151,7 +149,6 @@ try {
             'message' => 'Dispatch log updated successfully'
         ]);
     }
-
 } catch (Exception $e) {
     echo json_encode([
         'success' => false,
@@ -160,4 +157,3 @@ try {
 }
 
 pg_close($con);
-?>

@@ -116,20 +116,17 @@ export default function PurchaseOrderDetailPage() {
       const data = await response.json();
       if (data.success) {
         // Create dispatch log entry
-        await fetch(
-          "http://localhost:8000/api/dispatch-log/index.php",
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              po_id: poId,
-              recipient_email: po?.supplier_email,
-              dispatch_type: "email",
-              status: "sent",
-              response_notes: "P.O. dispatched successfully"
-            }),
-          }
-        );
+        await fetch("http://localhost:8000/api/dispatch-log/index.php", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            po_id: poId,
+            recipient_email: po?.supplier_email,
+            dispatch_type: "email",
+            status: "sent",
+            response_notes: "P.O. dispatched successfully",
+          }),
+        });
 
         alert("P.O. dispatched successfully to " + po?.supplier_email);
         fetchPurchaseOrder();
@@ -160,10 +157,10 @@ export default function PurchaseOrderDetailPage() {
       if (data.success) {
         alert("Goods receipt created successfully: " + data.gr_number);
         console.log("Three-way match result:", data.three_way_match);
-        
+
         // Auto-refresh data after GR is created
         setShowGRModal(false);
-        
+
         // Wait a moment for database to update, then refresh
         setTimeout(() => {
           fetchGoodsReceipts();
@@ -403,9 +400,10 @@ export default function PurchaseOrderDetailPage() {
             ) : (
               <div className="space-y-3">
                 {goodsReceipts.map((gr: any) => (
-                  <div
+                  <Link
                     key={gr.id}
-                    className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                    href={`/goods-receipts/${gr.id}`}
+                    className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition cursor-pointer"
                   >
                     <div>
                       <p className="font-medium text-gray-900">
@@ -432,7 +430,7 @@ export default function PurchaseOrderDetailPage() {
                         KES {gr.total_received_amount?.toLocaleString() || "0"}
                       </p>
                     </div>
-                  </div>
+                  </Link>
                 ))}
               </div>
             )}

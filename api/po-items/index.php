@@ -50,7 +50,6 @@ try {
             'items' => $items,
             'count' => count($items)
         ]);
-
     } elseif ($method === 'POST') {
         // Create PO item
         $data = json_decode(file_get_contents("php://input"), true);
@@ -106,7 +105,6 @@ try {
             'item_id' => $item_id,
             'line_total' => $line_total
         ]);
-
     } elseif ($method === 'PUT') {
         // Update PO item
         $data = json_decode(file_get_contents("php://input"), true);
@@ -123,19 +121,19 @@ try {
             $get_item = "SELECT po_id FROM po_items WHERE id = \$1";
             $result = pg_query_params($con, $get_item, array($data['id']));
             $item = pg_fetch_assoc($result);
-            
+
             $quantity = $data['quantity'] ?? 0;
             $unit_price = $data['unit_price'] ?? 0;
             $line_total = $quantity * $unit_price;
-            
+
             $update_fields[] = "quantity = \$" . $counter;
             $params[] = $quantity;
             $counter++;
-            
+
             $update_fields[] = "unit_price = \$" . $counter;
             $params[] = $unit_price;
             $counter++;
-            
+
             $update_fields[] = "line_total = \$" . $counter;
             $params[] = $line_total;
             $counter++;
@@ -182,7 +180,6 @@ try {
             'success' => true,
             'message' => 'PO item updated successfully'
         ]);
-
     } elseif ($method === 'DELETE') {
         // Delete PO item
         $item_id = $_GET['id'] ?? null;
@@ -220,7 +217,6 @@ try {
             'message' => 'PO item deleted successfully'
         ]);
     }
-
 } catch (Exception $e) {
     echo json_encode([
         'success' => false,
@@ -229,4 +225,3 @@ try {
 }
 
 pg_close($con);
-?>

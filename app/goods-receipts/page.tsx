@@ -267,14 +267,15 @@ export default function GoodsReceiptsPage() {
                           {getStatusBadge(gr.status)}
                         </td>
                         <td className="px-6 py-4 text-sm text-gray-900">
-                          KES {gr.total_received_amount?.toLocaleString() || "0"}
+                          KES{" "}
+                          {gr.total_received_amount?.toLocaleString() || "0"}
                         </td>
                         <td className="px-6 py-4 text-sm text-gray-500">
                           {new Date(gr.receipt_date).toLocaleDateString()}
                         </td>
                         <td className="px-6 py-4">
                           <Link
-                            href={`/purchase-orders/${gr.id}`}
+                            href={`/goods-receipts/${gr.id}`}
                             className="text-blue-600 hover:text-blue-800 text-sm font-medium"
                           >
                             <i className="ri-eye-line mr-1"></i>

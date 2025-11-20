@@ -50,7 +50,6 @@ try {
             'items' => $items,
             'count' => count($items)
         ]);
-
     } elseif ($method === 'PUT') {
         // Update GR item
         $data = json_decode(file_get_contents("php://input"), true);
@@ -72,14 +71,14 @@ try {
             $get_item = "SELECT quantity_ordered FROM gr_items WHERE id = \$1";
             $result = pg_query_params($con, $get_item, array($data['id']));
             $item = pg_fetch_assoc($result);
-            
+
             $qty_received = $data['quantity_received'];
             $qty_ordered = $item['quantity_ordered'];
-            
+
             $update_fields[] = "quantity_accepted = \$" . $counter;
             $params[] = $qty_received;
             $counter++;
-            
+
             $update_fields[] = "quantity_rejected = \$" . $counter;
             $params[] = $qty_ordered - $qty_received;
             $counter++;
@@ -138,7 +137,7 @@ try {
                 $total = pg_fetch_assoc($total_result);
 
                 $received_percentage = ($total['total'] / $po['total_amount']) * 100;
-                
+
                 if ($received_percentage >= 100) {
                     $new_status = 'received';
                 } elseif ($received_percentage > 0) {
@@ -157,7 +156,6 @@ try {
             'message' => 'GR item updated successfully'
         ]);
     }
-
 } catch (Exception $e) {
     echo json_encode([
         'success' => false,
@@ -166,4 +164,3 @@ try {
 }
 
 pg_close($con);
-?>
