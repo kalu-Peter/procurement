@@ -27,7 +27,7 @@ interface Supplier {
 
 export default function GeneratePOPage() {
   const router = useRouter();
-  const [user, setUser] = useState(getCurrentUser());
+  const [user, setUser] = useState<any>(null);
   const [approvedRequests, setApprovedRequests] = useState<AssetRequest[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [loading, setLoading] = useState(true);
@@ -42,12 +42,19 @@ export default function GeneratePOPage() {
   });
   const [submitting, setSubmitting] = useState(false);
 
-  const fetchApprovedRequests = async () => {
+  // Initialize user on component mount
+  useEffect(() => {
+    const currentUser = getCurrentUser();
+    setUser(currentUser);
+    console.log("User initialized:", currentUser);
+  }, []);
+
+  const fetchApprovedRequests = async (userData: any) => {
     try {
       console.log("Fetching approved requests...");
       const url = `http://localhost:8000/api/asset-requests/index.php?status=approved&user_role=${
-        user?.role || "admin"
-      }&user_id=${user?.id || ""}`;
+        userData?.role || "admin"
+      }&user_id=${userData?.id || ""}`;
       console.log("Request URL:", url);
 
       const response = await fetch(url);
@@ -108,7 +115,7 @@ export default function GeneratePOPage() {
       console.log("Current user:", user);
       if (user?.id) {
         console.log("User found, fetching data...");
-        await Promise.all([fetchApprovedRequests(), fetchSuppliers()]);
+        await Promise.all([fetchApprovedRequests(user), fetchSuppliers()]);
         console.log("Data fetch complete");
       } else {
         console.log("No user ID, setting loading to false");
@@ -185,7 +192,7 @@ export default function GeneratePOPage() {
         ],
       };
 
-      console.log("PO Data:", poData);
+      console.log("PO Data being sent:", poData);
 
       const response = await fetch(
         "http://localhost:8000/api/purchase-orders/index.php",
@@ -196,14 +203,23 @@ export default function GeneratePOPage() {
         }
       );
 
+      console.log("Response status:", response.status);
       const data = await response.json();
       console.log("PO Response:", data);
 
       if (data.success) {
+        const poId = data.po_id;
+        console.log("P.O. generated successfully with ID:", poId);
+        console.log("Displaying alert before navigation");
         alert(`P.O. generated successfully: ${data.po_number}`);
-        router.push(`/purchase-orders/${data.po_id}`);
+
+        // Use window.location for more reliable navigation
+        console.log("Navigating to /purchase-orders/" + poId);
+        window.location.href = `/purchase-orders/${poId}`;
       } else {
-        alert("Error: " + (data.message || "Unknown error"));
+        const errorMsg = "Error: " + (data.message || "Unknown error");
+        console.error("PO generation failed:", data);
+        alert(errorMsg);
       }
     } catch (error) {
       console.error("Error generating PO:", error);
@@ -218,21 +234,18 @@ export default function GeneratePOPage() {
     window.location.href = "/";
   };
 
-  if (!user) {
-    return <div>Please login to access this page.</div>;
-  }
-
-  if (loading) {
+  if (loading && !user) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <Header user={user} onLogout={handleLogout} />
         <div className="flex items-center justify-center py-20">
-          <div className="text-gray-500">
-            Loading approved requests and suppliers...
-          </div>
+          <div className="text-gray-500">Loading...</div>
         </div>
       </div>
     );
+  }
+
+  if (!user) {
+    return <div>Please login to access this page.</div>;
   }
 
   return (
@@ -264,7 +277,13 @@ export default function GeneratePOPage() {
           )}
 
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
-            {approvedRequests.length === 0 || suppliers.length === 0 ? (
+            {loading ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="text-gray-500">
+                  Loading approved requests and suppliers...
+                </div>
+              </div>
+            ) : approvedRequests.length === 0 || suppliers.length === 0 ? (
               <div className="text-center py-12">
                 <div className="mx-auto w-24 h-24 bg-yellow-100 rounded-full flex items-center justify-center mb-4">
                   <i className="ri-alert-line text-yellow-600 text-3xl"></i>

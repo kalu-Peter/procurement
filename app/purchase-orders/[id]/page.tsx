@@ -41,6 +41,7 @@ export default function PurchaseOrderDetailPage() {
 
   useEffect(() => {
     if (poId) {
+      console.log("PO ID from params:", poId);
       fetchPurchaseOrder();
       fetchGoodsReceipts();
     }
@@ -48,12 +49,15 @@ export default function PurchaseOrderDetailPage() {
 
   const fetchPurchaseOrder = async () => {
     try {
-      const response = await fetch(
-        `http://localhost:8000/api/purchase-orders/index.php?id=${poId}`
-      );
+      const url = `http://localhost:8000/api/purchase-orders/index.php?id=${poId}`;
+      console.log("Fetching PO from:", url);
+      const response = await fetch(url);
       const data = await response.json();
 
+      console.log("PO fetch response:", data);
+
       if (data.success && data.pos.length > 0) {
+        console.log("PO found:", data.pos[0]);
         setPo(data.pos[0]);
         // Initialize GR items from PO items
         if (data.pos[0].items) {
@@ -69,6 +73,8 @@ export default function PurchaseOrderDetailPage() {
             }))
           );
         }
+      } else {
+        console.error("No PO data in response:", data);
       }
     } catch (error) {
       console.error("Error fetching PO:", error);

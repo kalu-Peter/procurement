@@ -25,7 +25,7 @@ interface PurchaseOrder {
 }
 
 export default function PurchaseOrdersPage() {
-  const [user, setUser] = useState(getCurrentUser());
+  const [user, setUser] = useState<any>(null);
   const [orders, setOrders] = useState<PurchaseOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState("");
@@ -33,6 +33,11 @@ export default function PurchaseOrdersPage() {
   const [selectedOrder, setSelectedOrder] = useState<PurchaseOrder | null>(
     null
   );
+
+  useEffect(() => {
+    const currentUser = getCurrentUser();
+    setUser(currentUser);
+  }, []);
 
   useEffect(() => {
     if (user) {
@@ -120,6 +125,16 @@ export default function PurchaseOrdersPage() {
     window.location.href = "/";
   };
 
+  if (loading && !user) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <div className="flex items-center justify-center py-20">
+          <div className="text-gray-500">Loading...</div>
+        </div>
+      </div>
+    );
+  }
+
   if (!user) {
     return <div>Please login to access this page.</div>;
   }
@@ -140,13 +155,13 @@ export default function PurchaseOrdersPage() {
                 Manage and track all purchase orders and deliveries
               </p>
             </div>
-            <button
-              onClick={() => setShowCreateModal(true)}
+            <Link
+              href="/purchase-orders/new"
               className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition duration-200 flex items-center space-x-2"
             >
               <i className="ri-add-line"></i>
               <span>Generate P.O.</span>
-            </button>
+            </Link>
           </div>
 
           {/* Statistics Cards */}
