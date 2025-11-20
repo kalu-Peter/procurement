@@ -115,12 +115,28 @@ export default function PurchaseOrderDetailPage() {
 
       const data = await response.json();
       if (data.success) {
-        // Here you would add email dispatch logic
+        // Create dispatch log entry
+        await fetch(
+          "http://localhost:8000/api/dispatch-log/index.php",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              po_id: poId,
+              recipient_email: po?.supplier_email,
+              dispatch_type: "email",
+              status: "sent",
+              response_notes: "P.O. dispatched successfully"
+            }),
+          }
+        );
+
         alert("P.O. dispatched successfully to " + po?.supplier_email);
         fetchPurchaseOrder();
       }
     } catch (error) {
       console.error("Error dispatching PO:", error);
+      alert("Error dispatching P.O.: " + error);
     }
   };
 
@@ -142,13 +158,23 @@ export default function PurchaseOrderDetailPage() {
 
       const data = await response.json();
       if (data.success) {
-        alert("Goods receipt created successfully");
+        alert("Goods receipt created successfully: " + data.gr_number);
+        console.log("Three-way match result:", data.three_way_match);
+        
+        // Auto-refresh data after GR is created
         setShowGRModal(false);
-        fetchGoodsReceipts();
-        fetchPurchaseOrder();
+        
+        // Wait a moment for database to update, then refresh
+        setTimeout(() => {
+          fetchGoodsReceipts();
+          fetchPurchaseOrder();
+        }, 500);
+      } else {
+        alert("Error: " + (data.message || "Failed to create goods receipt"));
       }
     } catch (error) {
       console.error("Error creating GR:", error);
+      alert("Error creating goods receipt: " + error);
     }
   };
 

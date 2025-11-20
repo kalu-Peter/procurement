@@ -119,7 +119,7 @@ export default function AdminDashboard() {
           </Link>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
           <div className="bg-white rounded-lg shadow-lg p-6">
             <h2 className="text-xl font-semibold mb-4 text-gray-800">
               Asset Management
@@ -188,6 +188,32 @@ export default function AdminDashboard() {
                 className="block bg-gray-100 text-gray-700 px-4 py-2 rounded hover:bg-gray-200 text-center transition-colors"
               >
                 View All P.O.s
+              </Link>
+              <Link
+                href="/goods-receipts"
+                className="block bg-cyan-500 text-white px-4 py-2 rounded hover:bg-cyan-600 text-center transition-colors"
+              >
+                Goods Receipts
+              </Link>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg shadow-lg p-6">
+            <h2 className="text-xl font-semibold mb-4 text-gray-800">
+              Dispatch Management
+            </h2>
+            <div className="space-y-4">
+              <Link
+                href="/dispatch-log"
+                className="block bg-teal-500 text-white px-4 py-2 rounded hover:bg-teal-600 text-center transition-colors"
+              >
+                View Dispatch Log
+              </Link>
+              <Link
+                href="/purchase-orders"
+                className="block bg-gray-100 text-gray-700 px-4 py-2 rounded hover:bg-gray-200 text-center transition-colors"
+              >
+                Track Deliveries
               </Link>
             </div>
           </div>

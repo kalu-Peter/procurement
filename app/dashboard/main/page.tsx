@@ -199,6 +199,30 @@ export default function DashboardPage() {
                 </Link>
 
                 <Link
+                  href="/goods-receipts"
+                  className="flex flex-col items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
+                >
+                  <div className="w-12 h-12 bg-cyan-100 rounded-lg flex items-center justify-center mb-3">
+                    <i className="ri-inbox-line text-cyan-600 text-xl"></i>
+                  </div>
+                  <span className="text-sm font-medium text-gray-900 text-center">
+                    Goods Receipts
+                  </span>
+                </Link>
+
+                <Link
+                  href="/dispatch-log"
+                  className="flex flex-col items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
+                >
+                  <div className="w-12 h-12 bg-teal-100 rounded-lg flex items-center justify-center mb-3">
+                    <i className="ri-send-plane-line text-teal-600 text-xl"></i>
+                  </div>
+                  <span className="text-sm font-medium text-gray-900 text-center">
+                    Dispatch Log
+                  </span>
+                </Link>
+
+                <Link
                   href="/reports"
                   className="flex flex-col items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
                 >

@@ -1,0 +1,295 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { getCurrentUser } from "@/lib/auth";
+import Header from "@/components/Header";
+import Link from "next/link";
+
+interface GoodsReceipt {
+  id: string;
+  gr_number: string;
+  po_number: string;
+  supplier_name: string;
+  status: "pending" | "partial" | "complete" | "accepted" | "rejected";
+  total_received_amount: number;
+  receipt_date: string;
+  items?: any[];
+}
+
+export default function GoodsReceiptsPage() {
+  const [user, setUser] = useState<any>(null);
+  const [goodsReceipts, setGoodsReceipts] = useState<GoodsReceipt[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [filterStatus, setFilterStatus] = useState("");
+
+  useEffect(() => {
+    const currentUser = getCurrentUser();
+    setUser(currentUser);
+  }, []);
+
+  useEffect(() => {
+    if (user) {
+      fetchGoodsReceipts();
+      // Auto-refresh every 10 seconds
+      const interval = setInterval(fetchGoodsReceipts, 10000);
+      return () => clearInterval(interval);
+    }
+  }, [user, filterStatus]);
+
+  const fetchGoodsReceipts = async () => {
+    try {
+      setLoading(true);
+      const params = new URLSearchParams();
+      if (filterStatus) params.append("status", filterStatus);
+
+      const response = await fetch(
+        `http://localhost:8000/api/goods-receipts/index.php?${params}`
+      );
+      const data = await response.json();
+
+      if (data.success) {
+        setGoodsReceipts(data.goods_receipts || []);
+      }
+    } catch (error) {
+      console.error("Error fetching goods receipts:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getStatusBadge = (status: string) => {
+    const statusConfig: Record<
+      string,
+      { bg: string; text: string; icon: string }
+    > = {
+      pending: {
+        bg: "bg-yellow-100",
+        text: "text-yellow-800",
+        icon: "ri-time-line",
+      },
+      partial: {
+        bg: "bg-blue-100",
+        text: "text-blue-800",
+        icon: "ri-inbox-line",
+      },
+      complete: {
+        bg: "bg-purple-100",
+        text: "text-purple-800",
+        icon: "ri-checkbox-multiple-line",
+      },
+      accepted: {
+        bg: "bg-green-100",
+        text: "text-green-800",
+        icon: "ri-check-line",
+      },
+      rejected: {
+        bg: "bg-red-100",
+        text: "text-red-800",
+        icon: "ri-close-line",
+      },
+    };
+
+    const config = statusConfig[status] || statusConfig.pending;
+
+    return (
+      <div
+        className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${config.bg} ${config.text}`}
+      >
+        <i className={`${config.icon} mr-1`}></i>
+        {status.charAt(0).toUpperCase() + status.slice(1)}
+      </div>
+    );
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem("currentUser");
+    window.location.href = "/";
+  };
+
+  if (loading && !user) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <div className="flex items-center justify-center py-20">
+          <div className="text-gray-500">Loading...</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <div>Please login to access this page.</div>;
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <Header user={user} onLogout={handleLogout} />
+
+      <main className="px-6 py-8">
+        <div className="max-w-7xl mx-auto">
+          {/* Header */}
+          <div className="flex justify-between items-center mb-8">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">
+                Goods Receipts
+              </h1>
+              <p className="text-gray-600 mt-2">
+                Track all goods received and manage three-way match verification
+              </p>
+            </div>
+            <Link
+              href="/purchase-orders"
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition flex items-center space-x-2"
+            >
+              <i className="ri-arrow-left-line"></i>
+              <span>Back to P.O.</span>
+            </Link>
+          </div>
+
+          {/* Statistics Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            {["pending", "partial", "complete", "accepted"].map((status) => (
+              <div
+                key={status}
+                className="bg-white rounded-lg shadow-sm border border-gray-200 p-6"
+              >
+                <div className="flex items-center">
+                  <div className="p-3 rounded-full bg-blue-100">
+                    <i className="ri-inbox-line text-blue-600 text-xl"></i>
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-gray-600 capitalize">
+                      {status}
+                    </p>
+                    <p className="text-2xl font-semibold text-gray-900">
+                      {goodsReceipts.filter((g) => g.status === status).length}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Filters */}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
+            <div className="flex gap-4">
+              <select
+                value={filterStatus}
+                onChange={(e) => setFilterStatus(e.target.value)}
+                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">All Statuses</option>
+                <option value="pending">Pending</option>
+                <option value="partial">Partial</option>
+                <option value="complete">Complete</option>
+                <option value="accepted">Accepted</option>
+                <option value="rejected">Rejected</option>
+              </select>
+              <button
+                onClick={() => {
+                  setFilterStatus("");
+                  fetchGoodsReceipts();
+                }}
+                className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300"
+              >
+                Clear Filters
+              </button>
+              <button
+                onClick={fetchGoodsReceipts}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 ml-auto flex items-center space-x-2"
+              >
+                <i className="ri-refresh-line"></i>
+                <span>Refresh</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Goods Receipts Table */}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+            {loading ? (
+              <div className="flex items-center justify-center py-20">
+                <div className="text-gray-500">Loading goods receipts...</div>
+              </div>
+            ) : goodsReceipts.length === 0 ? (
+              <div className="text-center py-12">
+                <div className="mx-auto w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                  <i className="ri-inbox-line text-gray-400 text-3xl"></i>
+                </div>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">
+                  No goods receipts
+                </h3>
+                <p className="text-gray-500">
+                  Goods receipts will appear here after PO is received
+                </p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-gray-50 border-b border-gray-200">
+                    <tr>
+                      <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
+                        GR Number
+                      </th>
+                      <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
+                        P.O. Number
+                      </th>
+                      <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
+                        Supplier
+                      </th>
+                      <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
+                        Status
+                      </th>
+                      <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
+                        Amount Received
+                      </th>
+                      <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
+                        Receipt Date
+                      </th>
+                      <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                    {goodsReceipts.map((gr) => (
+                      <tr key={gr.id} className="hover:bg-gray-50">
+                        <td className="px-6 py-4">
+                          <span className="font-medium text-gray-900">
+                            {gr.gr_number}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-500">
+                          {gr.po_number}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-900">
+                          {gr.supplier_name}
+                        </td>
+                        <td className="px-6 py-4">
+                          {getStatusBadge(gr.status)}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-900">
+                          KES {gr.total_received_amount?.toLocaleString() || "0"}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-500">
+                          {new Date(gr.receipt_date).toLocaleDateString()}
+                        </td>
+                        <td className="px-6 py-4">
+                          <Link
+                            href={`/purchase-orders/${gr.id}`}
+                            className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                          >
+                            <i className="ri-eye-line mr-1"></i>
+                            View Details
+                          </Link>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+}
