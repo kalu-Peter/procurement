@@ -173,12 +173,20 @@ export default function Header({ user, onLogout }: HeaderProps) {
 
                 {(user.role === "admin" ||
                   user.role === "procurement_officer") && (
-                  <Link
-                    href="/reports"
-                    className="text-gray-700 hover:text-gray-900 font-medium whitespace-nowrap"
-                  >
-                    Reports
-                  </Link>
+                  <>
+                    <Link
+                      href="/purchase-orders"
+                      className="text-gray-700 hover:text-gray-900 font-medium whitespace-nowrap"
+                    >
+                      Purchase Orders
+                    </Link>
+                    <Link
+                      href="/reports"
+                      className="text-gray-700 hover:text-gray-900 font-medium whitespace-nowrap"
+                    >
+                      Reports
+                    </Link>
+                  </>
                 )}
               </nav>
             )}

@@ -1,0 +1,295 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { getCurrentUser } from "@/lib/auth";
+import Header from "@/components/Header";
+import Link from "next/link";
+
+interface PurchaseOrder {
+  id: string;
+  po_number: string;
+  asset_name: string;
+  supplier_name: string;
+  status:
+    | "draft"
+    | "generated"
+    | "sent"
+    | "acknowledged"
+    | "partial"
+    | "received"
+    | "cancelled";
+  total_amount: number;
+  po_date: string;
+  expected_delivery_date: string;
+  items?: any[];
+}
+
+export default function PurchaseOrdersPage() {
+  const [user, setUser] = useState(getCurrentUser());
+  const [orders, setOrders] = useState<PurchaseOrder[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [filterStatus, setFilterStatus] = useState("");
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState<PurchaseOrder | null>(
+    null
+  );
+
+  useEffect(() => {
+    if (user) {
+      fetchPurchaseOrders();
+    }
+  }, [user, filterStatus]);
+
+  const fetchPurchaseOrders = async () => {
+    try {
+      setLoading(true);
+      const params = new URLSearchParams();
+      if (filterStatus) params.append("status", filterStatus);
+
+      const response = await fetch(
+        `http://localhost:8000/api/purchase-orders/index.php?${params}`
+      );
+      const data = await response.json();
+
+      if (data.success) {
+        setOrders(data.pos);
+      }
+    } catch (error) {
+      console.error("Error fetching POs:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getStatusBadge = (status: string) => {
+    const statusConfig: Record<
+      string,
+      { bg: string; text: string; icon: string }
+    > = {
+      draft: {
+        bg: "bg-gray-100",
+        text: "text-gray-800",
+        icon: "ri-draft-line",
+      },
+      generated: {
+        bg: "bg-blue-100",
+        text: "text-blue-800",
+        icon: "ri-file-text-line",
+      },
+      sent: {
+        bg: "bg-purple-100",
+        text: "text-purple-800",
+        icon: "ri-send-plane-line",
+      },
+      acknowledged: {
+        bg: "bg-indigo-100",
+        text: "text-indigo-800",
+        icon: "ri-check-double-line",
+      },
+      partial: {
+        bg: "bg-yellow-100",
+        text: "text-yellow-800",
+        icon: "ri-alert-line",
+      },
+      received: {
+        bg: "bg-green-100",
+        text: "text-green-800",
+        icon: "ri-checkbox-circle-line",
+      },
+      cancelled: {
+        bg: "bg-red-100",
+        text: "text-red-800",
+        icon: "ri-close-circle-line",
+      },
+    };
+
+    const config = statusConfig[status] || statusConfig.draft;
+
+    return (
+      <div
+        className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${config.bg} ${config.text}`}
+      >
+        <i className={`${config.icon} mr-1`}></i>
+        {status.charAt(0).toUpperCase() + status.slice(1)}
+      </div>
+    );
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem("currentUser");
+    window.location.href = "/";
+  };
+
+  if (!user) {
+    return <div>Please login to access this page.</div>;
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <Header user={user} onLogout={handleLogout} />
+
+      <main className="px-6 py-8">
+        <div className="max-w-7xl mx-auto">
+          {/* Header */}
+          <div className="flex justify-between items-center mb-8">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">
+                Purchase Orders
+              </h1>
+              <p className="text-gray-600 mt-2">
+                Manage and track all purchase orders and deliveries
+              </p>
+            </div>
+            <button
+              onClick={() => setShowCreateModal(true)}
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition duration-200 flex items-center space-x-2"
+            >
+              <i className="ri-add-line"></i>
+              <span>Generate P.O.</span>
+            </button>
+          </div>
+
+          {/* Statistics Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            {["draft", "sent", "partial", "received"].map((status) => (
+              <div
+                key={status}
+                className="bg-white rounded-lg shadow-sm border border-gray-200 p-6"
+              >
+                <div className="flex items-center">
+                  <div className="p-3 rounded-full bg-blue-100">
+                    <i className="ri-file-text-line text-blue-600 text-xl"></i>
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-gray-600 capitalize">
+                      {status}
+                    </p>
+                    <p className="text-2xl font-semibold text-gray-900">
+                      {orders.filter((o) => o.status === status).length}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Filters */}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
+            <div className="flex gap-4">
+              <select
+                value={filterStatus}
+                onChange={(e) => setFilterStatus(e.target.value)}
+                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">All Statuses</option>
+                <option value="draft">Draft</option>
+                <option value="generated">Generated</option>
+                <option value="sent">Sent</option>
+                <option value="acknowledged">Acknowledged</option>
+                <option value="partial">Partial Receipt</option>
+                <option value="received">Received</option>
+                <option value="cancelled">Cancelled</option>
+              </select>
+              <button
+                onClick={() => setFilterStatus("")}
+                className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300"
+              >
+                Clear Filters
+              </button>
+            </div>
+          </div>
+
+          {/* Purchase Orders Table */}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+            {loading ? (
+              <div className="flex items-center justify-center py-20">
+                <div className="text-gray-500">Loading purchase orders...</div>
+              </div>
+            ) : orders.length === 0 ? (
+              <div className="text-center py-12">
+                <div className="mx-auto w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                  <i className="ri-file-text-line text-gray-400 text-3xl"></i>
+                </div>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">
+                  No purchase orders
+                </h3>
+                <p className="text-gray-500 mb-6">
+                  Create your first purchase order to get started.
+                </p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-gray-50 border-b border-gray-200">
+                    <tr>
+                      <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
+                        P.O. Number
+                      </th>
+                      <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
+                        Supplier
+                      </th>
+                      <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
+                        Asset
+                      </th>
+                      <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
+                        Status
+                      </th>
+                      <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
+                        Amount
+                      </th>
+                      <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
+                        Expected Delivery
+                      </th>
+                      <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                    {orders.map((order) => (
+                      <tr key={order.id} className="hover:bg-gray-50">
+                        <td className="px-6 py-4">
+                          <span className="font-medium text-gray-900">
+                            {order.po_number}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-500">
+                          {order.supplier_name}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-900">
+                          {order.asset_name}
+                        </td>
+                        <td className="px-6 py-4">
+                          {getStatusBadge(order.status)}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-900">
+                          KES {order.total_amount?.toLocaleString() || "0"}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-500">
+                          {order.expected_delivery_date
+                            ? new Date(
+                                order.expected_delivery_date
+                              ).toLocaleDateString()
+                            : "-"}
+                        </td>
+                        <td className="px-6 py-4">
+                          <Link
+                            href={`/purchase-orders/${order.id}`}
+                            className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                          >
+                            <i className="ri-eye-line mr-1"></i>
+                            View Details
+                          </Link>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+}
