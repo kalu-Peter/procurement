@@ -105,6 +105,12 @@ export default function GoodsReceiptDetailPage() {
 
     try {
       setUpdating(true);
+
+      // Calculate total received amount from items
+      const totalReceivedAmount = grItems.reduce((sum, item) => {
+        return sum + (item.line_total || 0);
+      }, 0);
+
       const response = await fetch(
         "http://localhost:8000/api/goods-receipts/index.php",
         {
@@ -113,6 +119,7 @@ export default function GoodsReceiptDetailPage() {
           body: JSON.stringify({
             id: grId,
             status: selectedStatus,
+            total_received_amount: totalReceivedAmount,
             status_notes: statusNotes,
             updated_by: user?.id,
             updated_by_name: user?.name,
@@ -122,7 +129,9 @@ export default function GoodsReceiptDetailPage() {
 
       const data = await response.json();
       if (data.success) {
-        alert(`Goods Receipt status updated to ${selectedStatus}`);
+        alert(
+          `Goods Receipt status updated to ${selectedStatus}\nTotal Received Amount: KES ${totalReceivedAmount.toLocaleString()}`
+        );
         setShowUpdateModal(false);
         setStatusNotes("");
         setTimeout(() => {

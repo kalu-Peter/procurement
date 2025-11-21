@@ -25,6 +25,15 @@ interface Supplier {
   category?: string;
 }
 
+interface POItem {
+  asset_name: string;
+  asset_category: string;
+  quantity: number;
+  unit_price: number;
+  uom: string;
+  request_id?: string;
+}
+
 export default function GeneratePOPage() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
@@ -32,8 +41,8 @@ export default function GeneratePOPage() {
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [selectedRequest, setSelectedRequest] = useState<string>("");
   const [selectedSupplier, setSelectedSupplier] = useState<string>("");
+  const [poItems, setPoItems] = useState<POItem[]>([]);
   const [formData, setFormData] = useState({
     expected_delivery_date: "",
     payment_terms: "30 days Net",
@@ -41,6 +50,14 @@ export default function GeneratePOPage() {
     notes: "",
   });
   const [submitting, setSubmitting] = useState(false);
+  const [newItem, setNewItem] = useState<POItem>({
+    asset_name: "",
+    asset_category: "",
+    quantity: 1,
+    unit_price: 0,
+    uom: "Unit",
+    request_id: "",
+  });
 
   // Initialize user on component mount
   useEffect(() => {
@@ -125,53 +142,90 @@ export default function GeneratePOPage() {
     initData();
   }, [user]);
 
-  // Log state changes for debugging
-  useEffect(() => {
-    console.log(
-      "State update - Loading:",
-      loading,
-      "Requests:",
-      approvedRequests.length,
-      "Suppliers:",
-      suppliers.length,
-      "Error:",
-      error
+  const handleAddItemFromRequest = (requestId: string) => {
+    const request = approvedRequests.find((r) => r.id === requestId);
+    if (!request) return;
+
+    const item: POItem = {
+      asset_name: request.asset_name,
+      asset_category: request.asset_category,
+      quantity: 1,
+      unit_price: parseFloat(request.estimated_cost?.toString() || "0"),
+      uom: "Unit",
+      request_id: requestId,
+    };
+
+    setPoItems([...poItems, item]);
+    setNewItem({
+      asset_name: "",
+      asset_category: "",
+      quantity: 1,
+      unit_price: 0,
+      uom: "Unit",
+      request_id: "",
+    });
+  };
+
+  const handleAddCustomItem = () => {
+    if (
+      !newItem.asset_name ||
+      newItem.quantity <= 0 ||
+      newItem.unit_price <= 0
+    ) {
+      alert("Please fill all item fields correctly");
+      return;
+    }
+
+    setPoItems([...poItems, { ...newItem }]);
+    setNewItem({
+      asset_name: "",
+      asset_category: "",
+      quantity: 1,
+      unit_price: 0,
+      uom: "Unit",
+      request_id: "",
+    });
+  };
+
+  const handleRemoveItem = (index: number) => {
+    setPoItems(poItems.filter((_, i) => i !== index));
+  };
+
+  const calculateLineTotal = (quantity: number, unitPrice: number) => {
+    return quantity * unitPrice;
+  };
+
+  const calculateTotalAmount = () => {
+    return poItems.reduce(
+      (sum, item) => sum + calculateLineTotal(item.quantity, item.unit_price),
+      0
     );
-  }, [loading, approvedRequests, suppliers, error]);
+  };
 
   const handleGeneratePO = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (!selectedRequest) {
-      alert("Please select an approved request");
-      return;
-    }
 
     if (!selectedSupplier) {
       alert("Please select a supplier");
       return;
     }
 
+    if (poItems.length === 0) {
+      alert("Please add at least one item to the purchase order");
+      return;
+    }
+
     try {
       setSubmitting(true);
 
-      const request = approvedRequests.find((r) => r.id === selectedRequest);
       const supplier = suppliers.find((s) => s.id === selectedSupplier);
 
-      if (!request || !supplier) {
-        alert("Invalid selection");
+      if (!supplier) {
+        alert("Invalid supplier selection");
         return;
       }
 
-      console.log("Creating PO with:", {
-        request_id: selectedRequest,
-        supplier_name: supplier.name,
-        created_by: user?.id,
-        created_by_name: user?.name,
-      });
-
       const poData = {
-        request_id: selectedRequest,
         supplier_name: supplier.name,
         supplier_email: supplier.email || "",
         created_by: user?.id,
@@ -180,16 +234,15 @@ export default function GeneratePOPage() {
         payment_terms: formData.payment_terms,
         delivery_address: formData.delivery_address,
         notes: formData.notes,
-        total_amount: parseFloat(request.estimated_cost?.toString() || "0"),
-        items: [
-          {
-            asset_name: request.asset_name,
-            asset_category: request.asset_category,
-            quantity: 1,
-            unit_price: parseFloat(request.estimated_cost?.toString() || "0"),
-            uom: "Unit",
-          },
-        ],
+        total_amount: calculateTotalAmount(),
+        items: poItems.map((item) => ({
+          asset_name: item.asset_name,
+          asset_category: item.asset_category,
+          quantity: item.quantity,
+          unit_price: item.unit_price,
+          uom: item.uom,
+          request_id: item.request_id,
+        })),
       };
 
       console.log("PO Data being sent:", poData);
@@ -210,11 +263,12 @@ export default function GeneratePOPage() {
       if (data.success) {
         const poId = data.po_id;
         console.log("P.O. generated successfully with ID:", poId);
-        console.log("Displaying alert before navigation");
-        alert(`P.O. generated successfully: ${data.po_number}`);
+        alert(
+          `P.O. generated successfully: ${
+            data.po_number
+          }\nTotal Amount: KES ${calculateTotalAmount().toLocaleString()}`
+        );
 
-        // Use window.location for more reliable navigation
-        console.log("Navigating to /purchase-orders/" + poId);
         window.location.href = `/purchase-orders/${poId}`;
       } else {
         const errorMsg = "Error: " + (data.message || "Unknown error");
@@ -253,7 +307,7 @@ export default function GeneratePOPage() {
       <Header user={user} onLogout={handleLogout} />
 
       <main className="px-6 py-8">
-        <div className="max-w-2xl mx-auto">
+        <div className="max-w-4xl mx-auto">
           <div className="mb-8">
             <Link
               href="/purchase-orders"
@@ -266,7 +320,7 @@ export default function GeneratePOPage() {
               Generate Purchase Order
             </h1>
             <p className="text-gray-600 mt-2">
-              Create a new P.O. from an approved asset request
+              Create a new P.O. with multiple items for a supplier
             </p>
           </div>
 
@@ -283,26 +337,16 @@ export default function GeneratePOPage() {
                   Loading approved requests and suppliers...
                 </div>
               </div>
-            ) : approvedRequests.length === 0 || suppliers.length === 0 ? (
+            ) : suppliers.length === 0 ? (
               <div className="text-center py-12">
                 <div className="mx-auto w-24 h-24 bg-yellow-100 rounded-full flex items-center justify-center mb-4">
                   <i className="ri-alert-line text-yellow-600 text-3xl"></i>
                 </div>
                 <h3 className="text-lg font-medium text-gray-900 mb-2">
-                  {approvedRequests.length === 0
-                    ? "No approved requests"
-                    : "No suppliers available"}
+                  No suppliers available
                 </h3>
                 <p className="text-gray-500 mb-6">
-                  {approvedRequests.length === 0
-                    ? "There are no approved asset requests available. Approved requests: " +
-                      approvedRequests.length +
-                      " | Suppliers: " +
-                      suppliers.length
-                    : "There are no suppliers available. Approved requests: " +
-                      approvedRequests.length +
-                      " | Suppliers: " +
-                      suppliers.length}
+                  There are no suppliers available to create a purchase order.
                 </p>
                 <Link
                   href="/purchase-orders"
@@ -313,70 +357,7 @@ export default function GeneratePOPage() {
                 </Link>
               </div>
             ) : (
-              <form onSubmit={handleGeneratePO} className="space-y-6">
-                {/* Select Request */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Select Approved Request *
-                  </label>
-                  <select
-                    value={selectedRequest}
-                    onChange={(e) => setSelectedRequest(e.target.value)}
-                    required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="">Choose a request...</option>
-                    {approvedRequests.map((req) => (
-                      <option key={req.id} value={req.id}>
-                        {req.asset_name} (KES{" "}
-                        {req.estimated_cost?.toLocaleString()}) -{" "}
-                        {req.requester_name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Request Details Preview */}
-                {selectedRequest && (
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    {approvedRequests
-                      .filter((r) => r.id === selectedRequest)
-                      .map((req) => (
-                        <div key={req.id}>
-                          <h4 className="font-medium text-gray-900 mb-3">
-                            {req.asset_name}
-                          </h4>
-                          <div className="grid grid-cols-2 gap-4 text-sm">
-                            <div>
-                              <p className="text-gray-600">Requested by</p>
-                              <p className="font-medium text-gray-900">
-                                {req.requester_name}
-                              </p>
-                            </div>
-                            <div>
-                              <p className="text-gray-600">Department</p>
-                              <p className="font-medium text-gray-900">
-                                {req.requester_department || "N/A"}
-                              </p>
-                            </div>
-                            <div>
-                              <p className="text-gray-600">Estimated Cost</p>
-                              <p className="font-medium text-gray-900">
-                                KES {req.estimated_cost?.toLocaleString()}
-                              </p>
-                            </div>
-                            <div>
-                              <p className="text-gray-600">Category</p>
-                              <p className="font-medium text-gray-900">
-                                {req.asset_category}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                  </div>
-                )}
-
+              <form onSubmit={handleGeneratePO} className="space-y-8">
                 {/* Select Supplier */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -397,76 +378,311 @@ export default function GeneratePOPage() {
                   </select>
                 </div>
 
-                {/* Expected Delivery Date */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Expected Delivery Date
-                  </label>
-                  <input
-                    type="date"
-                    value={formData.expected_delivery_date}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        expected_delivery_date: e.target.value,
-                      })
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
+                {/* PO Items Section */}
+                <div className="border-t pt-8">
+                  <h2 className="text-xl font-semibold text-gray-900 mb-6">
+                    Purchase Order Items
+                  </h2>
+
+                  {/* Add Items from Approved Requests */}
+                  {approvedRequests.length > 0 && (
+                    <div className="mb-8 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                      <h3 className="font-medium text-gray-900 mb-4">
+                        Add Items from Approved Requests
+                      </h3>
+                      <div className="space-y-2">
+                        {approvedRequests.map((req) => (
+                          <div
+                            key={req.id}
+                            className="flex items-center justify-between p-3 bg-white border border-blue-100 rounded"
+                          >
+                            <div className="flex-1">
+                              <p className="font-medium text-gray-900">
+                                {req.asset_name}
+                              </p>
+                              <p className="text-sm text-gray-600">
+                                KES {req.estimated_cost?.toLocaleString()} •{" "}
+                                {req.requester_name}
+                              </p>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handleAddItemFromRequest(req.id)}
+                              className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
+                            >
+                              <i className="ri-add-line mr-1"></i>Add
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Add Custom Item */}
+                  <div className="mb-8 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+                    <h3 className="font-medium text-gray-900 mb-4">
+                      Add Custom Item
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Asset Name
+                        </label>
+                        <input
+                          type="text"
+                          value={newItem.asset_name}
+                          onChange={(e) =>
+                            setNewItem({
+                              ...newItem,
+                              asset_name: e.target.value,
+                            })
+                          }
+                          placeholder="Enter asset name..."
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Category
+                        </label>
+                        <input
+                          type="text"
+                          value={newItem.asset_category}
+                          onChange={(e) =>
+                            setNewItem({
+                              ...newItem,
+                              asset_category: e.target.value,
+                            })
+                          }
+                          placeholder="e.g., Equipment"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Quantity
+                        </label>
+                        <input
+                          type="number"
+                          value={newItem.quantity}
+                          onChange={(e) =>
+                            setNewItem({
+                              ...newItem,
+                              quantity: parseInt(e.target.value) || 1,
+                            })
+                          }
+                          min="1"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Unit of Measure
+                        </label>
+                        <select
+                          value={newItem.uom}
+                          onChange={(e) =>
+                            setNewItem({ ...newItem, uom: e.target.value })
+                          }
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                          <option>Unit</option>
+                          <option>Box</option>
+                          <option>Carton</option>
+                          <option>Meter</option>
+                          <option>Kilogram</option>
+                          <option>Liter</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Unit Price (KES)
+                        </label>
+                        <input
+                          type="number"
+                          value={newItem.unit_price}
+                          onChange={(e) =>
+                            setNewItem({
+                              ...newItem,
+                              unit_price: parseFloat(e.target.value) || 0,
+                            })
+                          }
+                          min="0"
+                          step="0.01"
+                          placeholder="0.00"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                      <div className="flex items-end">
+                        <button
+                          type="button"
+                          onClick={handleAddCustomItem}
+                          className="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition flex items-center justify-center space-x-2"
+                        >
+                          <i className="ri-add-line"></i>
+                          <span>Add Item</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Items List */}
+                  {poItems.length > 0 && (
+                    <div className="mb-8 overflow-x-auto">
+                      <table className="w-full">
+                        <thead className="bg-gray-100 border-b">
+                          <tr>
+                            <th className="px-4 py-2 text-left text-sm font-medium text-gray-900">
+                              Asset Name
+                            </th>
+                            <th className="px-4 py-2 text-left text-sm font-medium text-gray-900">
+                              Category
+                            </th>
+                            <th className="px-4 py-2 text-center text-sm font-medium text-gray-900">
+                              Qty
+                            </th>
+                            <th className="px-4 py-2 text-left text-sm font-medium text-gray-900">
+                              UOM
+                            </th>
+                            <th className="px-4 py-2 text-right text-sm font-medium text-gray-900">
+                              Unit Price
+                            </th>
+                            <th className="px-4 py-2 text-right text-sm font-medium text-gray-900">
+                              Line Total
+                            </th>
+                            <th className="px-4 py-2 text-center text-sm font-medium text-gray-900">
+                              Action
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y">
+                          {poItems.map((item, index) => (
+                            <tr key={index} className="hover:bg-gray-50">
+                              <td className="px-4 py-3 text-sm text-gray-900">
+                                {item.asset_name}
+                              </td>
+                              <td className="px-4 py-3 text-sm text-gray-600">
+                                {item.asset_category}
+                              </td>
+                              <td className="px-4 py-3 text-center text-sm text-gray-900 font-medium">
+                                {item.quantity}
+                              </td>
+                              <td className="px-4 py-3 text-sm text-gray-600">
+                                {item.uom}
+                              </td>
+                              <td className="px-4 py-3 text-right text-sm text-gray-900">
+                                KES {item.unit_price.toLocaleString()}
+                              </td>
+                              <td className="px-4 py-3 text-right text-sm font-medium text-gray-900">
+                                KES{" "}
+                                {calculateLineTotal(
+                                  item.quantity,
+                                  item.unit_price
+                                ).toLocaleString()}
+                              </td>
+                              <td className="px-4 py-3 text-center">
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveItem(index)}
+                                  className="text-red-600 hover:text-red-800"
+                                >
+                                  <i className="ri-delete-line"></i>
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                          <tr className="bg-gray-50 font-medium">
+                            <td colSpan={5} className="px-4 py-3 text-right">
+                              Total Amount:
+                            </td>
+                            <td className="px-4 py-3 text-right text-lg text-blue-600">
+                              KES {calculateTotalAmount().toLocaleString()}
+                            </td>
+                            <td></td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
                 </div>
 
-                {/* Payment Terms */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Payment Terms
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.payment_terms}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        payment_terms: e.target.value,
-                      })
-                    }
-                    placeholder="e.g., 30 days Net"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
+                {/* PO Details */}
+                <div className="border-t pt-8 space-y-6">
+                  <h2 className="text-xl font-semibold text-gray-900">
+                    Purchase Order Details
+                  </h2>
 
-                {/* Delivery Address */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Delivery Address
-                  </label>
-                  <textarea
-                    value={formData.delivery_address}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        delivery_address: e.target.value,
-                      })
-                    }
-                    rows={3}
-                    placeholder="Enter delivery address..."
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
+                  {/* Expected Delivery Date */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Expected Delivery Date
+                    </label>
+                    <input
+                      type="date"
+                      value={formData.expected_delivery_date}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          expected_delivery_date: e.target.value,
+                        })
+                      }
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
 
-                {/* Notes */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Additional Notes
-                  </label>
-                  <textarea
-                    value={formData.notes}
-                    onChange={(e) =>
-                      setFormData({ ...formData, notes: e.target.value })
-                    }
-                    rows={3}
-                    placeholder="Any special instructions or notes..."
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
+                  {/* Payment Terms */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Payment Terms
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.payment_terms}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          payment_terms: e.target.value,
+                        })
+                      }
+                      placeholder="e.g., 30 days Net"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+
+                  {/* Delivery Address */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Delivery Address
+                    </label>
+                    <textarea
+                      value={formData.delivery_address}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          delivery_address: e.target.value,
+                        })
+                      }
+                      rows={3}
+                      placeholder="Enter delivery address..."
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+
+                  {/* Notes */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Additional Notes
+                    </label>
+                    <textarea
+                      value={formData.notes}
+                      onChange={(e) =>
+                        setFormData({ ...formData, notes: e.target.value })
+                      }
+                      rows={3}
+                      placeholder="Any special instructions or notes..."
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
                 </div>
 
                 {/* Submit Buttons */}
@@ -474,7 +690,7 @@ export default function GeneratePOPage() {
                   <button
                     type="submit"
                     disabled={
-                      submitting || !selectedRequest || !selectedSupplier
+                      submitting || !selectedSupplier || poItems.length === 0
                     }
                     className="flex-1 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
                   >
