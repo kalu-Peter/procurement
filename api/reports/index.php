@@ -1,4 +1,9 @@
+
 <?php
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+
 header("Access-Control-Allow-Origin: http://localhost:3000");
 header("Content-Type: application/json; charset=UTF-8");
 header("Access-Control-Allow-Methods: GET, OPTIONS");
@@ -20,7 +25,8 @@ if (empty($reportType) || empty($period)) {
     exit();
 }
 
-function getPeriodInterval($period) {
+function getPeriodInterval($period)
+{
     $interval = '';
     if ($period === 'monthly') {
         $interval = '1 month';
@@ -36,7 +42,8 @@ function getPeriodInterval($period) {
     return $interval;
 }
 
-function executeQuery($con, $sql) {
+function executeQuery($con, $sql)
+{
     $result = pg_query($con, $sql);
 
     if ($result) {
@@ -49,28 +56,47 @@ function executeQuery($con, $sql) {
     }
 }
 
-function getPurchaseOrderReport($con, $period) {
+function getPurchaseOrderReport($con, $period)
+{
     $interval = getPeriodInterval($period);
     $sql = "SELECT id, po_number, supplier_name, total_amount, status, po_date FROM purchase_orders WHERE po_date >= NOW() - INTERVAL '$interval'";
     executeQuery($con, $sql);
 }
 
-function getAssetsDisposalReport($con, $period) {
+function getAssetsDisposalReport($con, $period)
+{
     $interval = getPeriodInterval($period);
-    $sql = "SELECT dr.id, a.asset_name, dr.disposal_method, dr.status, dr.request_date 
+
+    $sql = "SELECT 
+                dr.id,
+                dr.asset_id,
+                dr.reason,
+                dr.method,
+                dr.status,
+                dr.request_date,
+                dr.requested_by,
+                dr.requested_by_name,
+                dr.sale_amount,
+                dr.recipient_details,
+                dr.notes
             FROM disposal_requests dr
             JOIN assets a ON dr.asset_id = a.id
-            WHERE dr.request_date >= NOW() - INTERVAL '$interval'";
+            WHERE dr.request_date >= NOW() - INTERVAL '$interval'
+            ORDER BY dr.request_date DESC";
+
     executeQuery($con, $sql);
 }
 
-function getTransferReport($con, $period) {
+
+function getTransferReport($con, $period)
+{
     $interval = getPeriodInterval($period);
     $sql = "SELECT id, asset_id, from_department, to_department, status, request_date FROM transfer_requests WHERE request_date >= NOW() - INTERVAL '$interval'";
     executeQuery($con, $sql);
 }
 
-function getSuppliersPerformanceReport($con, $period) {
+function getSuppliersPerformanceReport($con, $period)
+{
     $interval = getPeriodInterval($period);
     $sql = "SELECT 
                 s.supplier_name,
@@ -89,14 +115,35 @@ function getSuppliersPerformanceReport($con, $period) {
     executeQuery($con, $sql);
 }
 
-function getRequestsReport($con, $period, $status = '') {
+function getRequestsReport($con, $period, $status = '')
+{
     $interval = getPeriodInterval($period);
-    $sql = "SELECT id, request_type, status, created_at FROM asset_requests WHERE created_at >= NOW() - INTERVAL '$interval'";
+
+    $sql = "SELECT 
+                id,
+                requester_id,
+                requester_name,
+                requester_department,
+                asset_name,
+                asset_category,
+                justification,
+                estimated_cost,
+                urgency,
+                preferred_vendor,
+                status,
+                created_at
+            FROM asset_requests
+            WHERE created_at >= NOW() - INTERVAL '$interval'";
+
     if (!empty($status)) {
         $sql .= " AND status = '" . pg_escape_string($status) . "'";
     }
+
+    $sql .= " ORDER BY created_at DESC";
+
     executeQuery($con, $sql);
 }
+
 
 
 switch ($reportType) {
@@ -129,4 +176,3 @@ switch ($reportType) {
         echo json_encode(["message" => "Invalid reportType specified."]);
         break;
 }
-?>
