@@ -102,12 +102,12 @@ try {
             'count' => count($pos)
         ]);
     } elseif ($method === 'POST') {
-        // Create new PO from approved request
+        // Create new PO with multiple items (can be from approved requests or custom items)
         $data = json_decode(file_get_contents("php://input"), true);
 
-        $required_fields = ['request_id', 'supplier_name', 'created_by', 'created_by_name'];
+        $required_fields = ['supplier_name', 'created_by', 'created_by_name', 'items'];
         foreach ($required_fields as $field) {
-            if (!isset($data[$field])) {
+            if (!isset($data[$field]) || empty($data[$field])) {
                 throw new Exception("Missing required field: $field");
             }
         }
@@ -115,36 +115,25 @@ try {
         // Generate PO number
         $po_number = 'PO-' . date('YmdHis') . '-' . rand(1000, 9999);
 
-        // Get request details
-        $request_query = "SELECT * FROM asset_requests WHERE id = \$1";
-        $request_result = pg_query_params($con, $request_query, array($data['request_id']));
-        $request = pg_fetch_assoc($request_result);
-
-        if (!$request) {
-            throw new Exception("Request not found");
-        }
-
         // Insert PO
         $po_id = uniqid('PO_', true);
         $insert_po = "
             INSERT INTO purchase_orders (
-                id, po_number, request_id, supplier_name, supplier_email,
-                created_by, created_by_name, department, expected_delivery_date,
-                total_amount, payment_terms, delivery_address, notes, status
-            ) VALUES (\$1, \$2, \$3, \$4, \$5, \$6, \$7, \$8, \$9, \$10, \$11, \$12, \$13, 'draft')
+                id, po_number, supplier_name, supplier_email,
+                created_by, created_by_name, expected_delivery_date,
+                total_amount, payment_terms, delivery_address, notes, status, created_at
+            ) VALUES (\$1, \$2, \$3, \$4, \$5, \$6, \$7, \$8, \$9, \$10, \$11, 'draft', NOW())
         ";
 
         $params = array(
             $po_id,
             $po_number,
-            $data['request_id'],
             $data['supplier_name'],
             $data['supplier_email'] ?? null,
             $data['created_by'],
             $data['created_by_name'],
-            $request['requester_department'] ?? null,
             $data['expected_delivery_date'] ?? null,
-            $data['total_amount'] ?? null,
+            $data['total_amount'] ?? 0,
             $data['payment_terms'] ?? null,
             $data['delivery_address'] ?? null,
             $data['notes'] ?? null
@@ -156,15 +145,15 @@ try {
             throw new Exception("Error creating PO: " . pg_last_error($con));
         }
 
-        // Insert PO line items
-        if (isset($data['items']) && is_array($data['items'])) {
-            $insert_item = "
-                INSERT INTO po_items (
-                    id, po_id, asset_name, asset_category, description,
-                    quantity, unit_price, line_total, uom, delivery_date
-                ) VALUES (\$1, \$2, \$3, \$4, \$5, \$6, \$7, \$8, \$9, \$10)
-            ";
+        // Insert PO line items and mark requests as fulfilled
+        $insert_item = "
+            INSERT INTO po_items (
+                id, po_id, asset_name, asset_category, description,
+                quantity, unit_price, line_total, uom, delivery_date
+            ) VALUES (\$1, \$2, \$3, \$4, \$5, \$6, \$7, \$8, \$9, \$10)
+        ";
 
+        if (isset($data['items']) && is_array($data['items'])) {
             foreach ($data['items'] as $item) {
                 $item_id = uniqid('POI_', true);
                 $line_total = ($item['quantity'] ?? 1) * ($item['unit_price'] ?? 0);
@@ -187,12 +176,14 @@ try {
                 if (!$item_result) {
                     throw new Exception("Error creating PO item: " . pg_last_error($con));
                 }
+
+                // If this item has a request_id, mark the request as fulfilled
+                if (!empty($item['request_id'])) {
+                    $update_request = "UPDATE asset_requests SET status = 'fulfilled' WHERE id = \$1";
+                    pg_query_params($con, $update_request, array($item['request_id']));
+                }
             }
         }
-
-        // Update request status
-        $update_request = "UPDATE asset_requests SET status = 'fulfilled' WHERE id = \$1";
-        pg_query_params($con, $update_request, array($data['request_id']));
 
         echo json_encode([
             'success' => true,

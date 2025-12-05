@@ -170,6 +170,12 @@ export default function Header({ user, onLogout }: HeaderProps) {
                 >
                   Suppliers
                 </Link>
+                <Link
+                  href="/reports"
+                  className="text-gray-700 hover:text-gray-900 font-medium whitespace-nowrap"
+                >
+                  Reports
+                </Link>
 
                 {(user.role === "admin" ||
                   user.role === "procurement_officer") && (
@@ -179,12 +185,6 @@ export default function Header({ user, onLogout }: HeaderProps) {
                       className="text-gray-700 hover:text-gray-900 font-medium whitespace-nowrap"
                     >
                       Purchase Orders
-                    </Link>
-                    <Link
-                      href="/reports"
-                      className="text-gray-700 hover:text-gray-900 font-medium whitespace-nowrap"
-                    >
-                      Reports
                     </Link>
                   </>
                 )}

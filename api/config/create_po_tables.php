@@ -8,7 +8,7 @@ try {
     CREATE TABLE IF NOT EXISTS purchase_orders (
         id VARCHAR(36) PRIMARY KEY,
         po_number VARCHAR(50) UNIQUE NOT NULL,
-        request_id VARCHAR(36) NOT NULL,
+        request_id VARCHAR(36),
         supplier_id INT,
         supplier_name VARCHAR(255) NOT NULL,
         supplier_email VARCHAR(255),
