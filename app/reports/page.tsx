@@ -26,7 +26,12 @@ const ReportsPage = () => {
         throw new Error(errorData.message || "Failed to fetch report data.");
       }
       const data = await response.json();
-      setReportData(data);
+
+      if (!Array.isArray(data.data)) {
+        throw new Error("Invalid response format from server.");
+      }
+
+      setReportData(data.data);
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -43,7 +48,15 @@ const ReportsPage = () => {
       return <p>No data to display.</p>;
     }
 
-    const headers = Object.keys(reportData[0]);
+    if (
+      !Array.isArray(reportData) ||
+      reportData.length === 0 ||
+      !reportData[0]
+    ) {
+      return <p>No data to display.</p>;
+    }
+
+    const headers = Object.keys(reportData[0] || {});
 
     return (
       <div id="report-content">

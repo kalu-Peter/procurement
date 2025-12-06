@@ -17,6 +17,9 @@ require_once '../config/connect.php';
 
 $reportType = $_GET['reportType'] ?? '';
 $period     = $_GET['period'] ?? '';
+$page       = isset($_GET['page']) ? intval($_GET['page']) : 1;
+$limit      = isset($_GET['limit']) ? intval($_GET['limit']) : 20;
+$offset     = ($page - 1) * $limit;
 
 if (!$reportType || !$period) {
     http_response_code(400);
@@ -26,9 +29,9 @@ if (!$reportType || !$period) {
 
 
 
-/* ============================================================
-   UNIVERSAL DATE FILTER: year:2024 / month:03 / quarter:1
-   ============================================================ */
+/* =======================================
+   UNIVERSAL YEAR/MONTH/QUARTER FILTER
+   ======================================= */
 function buildDateFilter($column, $period)
 {
     if (!str_contains($period, ":")) {
@@ -59,81 +62,116 @@ function buildDateFilter($column, $period)
 }
 
 
-/* ============================================================
-   EXECUTE QUERY WRAPPER
-   ============================================================ */
-function executeQuery($con, $sql)
+
+/* =======================================
+   PAGINATED QUERY WRAPPER
+   ======================================= */
+function executePaginatedQuery($con, $sql, $countSql, $page, $limit)
 {
     $result = pg_query($con, $sql);
+    $countResult = pg_query($con, $countSql);
 
-    if ($result) {
-        $data = pg_fetch_all($result);
-        http_response_code(200);
-        echo json_encode($data ?: []);
-    } else {
+    if (!$result || !$countResult) {
         http_response_code(500);
         echo json_encode([
-            "message" => "Failed to fetch report data.",
+            "message" => "Failed to fetch data.",
             "error" => pg_last_error($con)
         ]);
+        exit();
     }
+
+    $data = pg_fetch_all($result) ?: [];
+    $totalRow = pg_fetch_assoc($countResult);
+    $total = intval($totalRow['count']);
+    $totalPages = ceil($total / $limit);
+
+    echo json_encode([
+        "page" => $page,
+        "limit" => $limit,
+        "total" => $total,
+        "totalPages" => $totalPages,
+        "data" => $data
+    ]);
 }
 
 
 
-/* ============================================================
-   REPORT FUNCTIONS (ALL USING YEAR/MONTH/QUARTER)
-   ============================================================ */
+/* =======================================
+   REPORT FUNCTIONS
+   ======================================= */
 
-function getPurchaseOrderReport($con, $period)
+function getPurchaseOrderReport($con, $period, $page, $limit, $offset)
 {
     $filter = buildDateFilter("po_date", $period);
 
-    $sql = "SELECT id, po_number, supplier_name, total_amount, status, po_date
+    $sql = "SELECT 
+                po_number,
+                supplier_name,
+                total_amount,
+                status,
+                po_date
             FROM purchase_orders
             WHERE $filter
-            ORDER BY po_date DESC";
+            ORDER BY po_date DESC
+            LIMIT $limit OFFSET $offset";
 
-    executeQuery($con, $sql);
+    $countSql = "SELECT COUNT(*) FROM purchase_orders WHERE $filter";
+
+    executePaginatedQuery($con, $sql, $countSql, $page, $limit);
 }
 
-function getAssetsDisposalReport($con, $period)
+function getAssetsDisposalReport($con, $period, $page, $limit, $offset)
 {
     $filter = buildDateFilter("dr.request_date", $period);
 
     $sql = "SELECT 
-                dr.id,
-                dr.asset_id,
+                a.serial_number,
                 dr.reason,
                 dr.method,
                 dr.status,
                 dr.request_date,
-                dr.requested_by,
                 dr.requested_by_name,
                 dr.sale_amount,
-                dr.recipient_details,
-                dr.notes
+                dr.recipient_details
             FROM disposal_requests dr
             JOIN assets a ON dr.asset_id = a.id
             WHERE $filter
-            ORDER BY dr.request_date DESC";
+            ORDER BY dr.request_date DESC
+            LIMIT $limit OFFSET $offset";
 
-    executeQuery($con, $sql);
+    $countSql = "SELECT COUNT(*) 
+                 FROM disposal_requests dr
+                 JOIN assets a ON dr.asset_id = a.id
+                 WHERE $filter";
+
+    executePaginatedQuery($con, $sql, $countSql, $page, $limit);
 }
 
-function getTransferReport($con, $period)
+function getTransferReport($con, $period, $page, $limit, $offset)
 {
-    $filter = buildDateFilter("request_date", $period);
+    $filter = buildDateFilter("tr.request_date", $period);
 
-    $sql = "SELECT id, asset_id, from_department, to_department, status, request_date
-            FROM transfer_requests
+    $sql = "SELECT 
+                a.serial_number,
+                tr.from_department,
+                tr.to_department,
+                tr.status,
+                tr.request_date
+            FROM transfer_requests tr
+            JOIN assets a ON tr.asset_id = a.id
             WHERE $filter
-            ORDER BY request_date DESC";
+            ORDER BY tr.request_date DESC
+            LIMIT $limit OFFSET $offset";
 
-    executeQuery($con, $sql);
+    $countSql = "SELECT COUNT(*)
+                 FROM transfer_requests tr
+                 JOIN assets a ON tr.asset_id = a.id
+                 WHERE $filter";
+
+    executePaginatedQuery($con, $sql, $countSql, $page, $limit);
 }
 
-function getSuppliersPerformanceReport($con, $period)
+function getSuppliersPerformanceReport($con, $period, $page, $limit, $offset)
 {
     $filter = buildDateFilter("po.po_date", $period);
 
@@ -145,12 +183,22 @@ function getSuppliersPerformanceReport($con, $period)
             JOIN purchase_orders po ON s.id = po.supplier_id
             WHERE $filter
             GROUP BY s.supplier_name
-            ORDER BY total_amount DESC";
+            ORDER BY total_amount DESC
+            LIMIT $limit OFFSET $offset";
 
-    executeQuery($con, $sql);
+    $countSql = "SELECT COUNT(*) 
+                 FROM (
+                    SELECT s.supplier_name
+                    FROM suppliers s
+                    JOIN purchase_orders po ON s.id = po.supplier_id
+                    WHERE $filter
+                    GROUP BY s.supplier_name
+                 ) AS t";
+
+    executePaginatedQuery($con, $sql, $countSql, $page, $limit);
 }
 
-function getRequestsReport($con, $period, $status = '')
+function getRequestsReport($con, $period, $page, $limit, $offset, $status = '')
 {
     $filter = buildDateFilter("created_at", $period);
 
@@ -158,62 +206,63 @@ function getRequestsReport($con, $period, $status = '')
         $filter .= " AND status = '" . pg_escape_string($status) . "'";
     }
 
-    $sql = "
-        SELECT 
-            id,
-            requester_name,
-            requester_department,
-            asset_name,
-            asset_category,
-            justification,
-            estimated_cost,
-            urgency,
-            status,
-            created_at
-        FROM asset_requests
-        WHERE $filter
-        ORDER BY created_at DESC";
+    $sql = "SELECT 
+                requester_name,
+                requester_department,
+                asset_name,
+                asset_category,
+                justification,
+                estimated_cost,
+                urgency,
+                status,
+                created_at
+            FROM asset_requests
+            WHERE $filter
+            ORDER BY created_at DESC
+            LIMIT $limit OFFSET $offset";
 
-    executeQuery($con, $sql);
+    $countSql = "SELECT COUNT(*) FROM asset_requests WHERE $filter";
+
+    executePaginatedQuery($con, $sql, $countSql, $page, $limit);
 }
 
 
 
-/* ============================================================
+/* =======================================
    SWITCH HANDLER
-   ============================================================ */
+   ======================================= */
 
 switch ($reportType) {
     case 'purchase-order':
-        getPurchaseOrderReport($con, $period);
+        getPurchaseOrderReport($con, $period, $page, $limit, $offset);
         break;
 
     case 'assets-disposal':
-        getAssetsDisposalReport($con, $period);
+        getAssetsDisposalReport($con, $period, $page, $limit, $offset);
         break;
 
     case 'transfer':
-        getTransferReport($con, $period);
+        getTransferReport($con, $period, $page, $limit, $offset);
         break;
 
     case 'suppliers-performance':
-        getSuppliersPerformanceReport($con, $period);
+        getSuppliersPerformanceReport($con, $period, $page, $limit, $offset);
         break;
 
     case 'requests':
-        getRequestsReport($con, $period);
+        getRequestsReport($con, $period, $page, $limit, $offset);
         break;
 
     case 'pending-requests':
-        getRequestsReport($con, $period, 'pending');
+        getRequestsReport($con, $period, $page, $limit, $offset, 'pending');
         break;
 
     case 'approved-requests':
-        getRequestsReport($con, $period, 'approved');
+        getRequestsReport($con, $period, $page, $limit, $offset, 'approved');
         break;
 
     case 'rejected-requests':
-        getRequestsReport($con, $period, 'rejected');
+        getRequestsReport($con, $period, $page, $limit, $offset, 'rejected');
         break;
 
     default:
