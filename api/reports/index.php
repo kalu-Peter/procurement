@@ -1,4 +1,3 @@
-
 <?php
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
@@ -16,32 +15,53 @@ if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
 
 require_once '../config/connect.php';
 
-$reportType = isset($_GET['reportType']) ? $_GET['reportType'] : '';
-$period = isset($_GET['period']) ? $_GET['period'] : '';
+$reportType = $_GET['reportType'] ?? '';
+$period     = $_GET['period'] ?? '';
 
-if (empty($reportType) || empty($period)) {
+if (!$reportType || !$period) {
     http_response_code(400);
     echo json_encode(["message" => "Missing reportType or period parameters."]);
     exit();
 }
 
-function getPeriodInterval($period)
+
+
+/* ============================================================
+   UNIVERSAL DATE FILTER: year:2024 / month:03 / quarter:1
+   ============================================================ */
+function buildDateFilter($column, $period)
 {
-    $interval = '';
-    if ($period === 'monthly') {
-        $interval = '1 month';
-    } elseif ($period === 'quarterly') {
-        $interval = '3 months';
-    } elseif ($period === 'annually') {
-        $interval = '1 year';
-    } else {
+    if (!str_contains($period, ":")) {
         http_response_code(400);
-        echo json_encode(["message" => "Invalid period specified."]);
+        echo json_encode(["message" => "Invalid period format."]);
         exit();
     }
-    return $interval;
+
+    list($type, $value) = explode(":", $period);
+
+    switch ($type) {
+        case "year":
+            return "EXTRACT(YEAR FROM $column) = $value";
+
+        case "month":
+            return "EXTRACT(MONTH FROM $column) = $value
+                    AND EXTRACT(YEAR FROM $column) = EXTRACT(YEAR FROM CURRENT_DATE)";
+
+        case "quarter":
+            return "EXTRACT(QUARTER FROM $column) = $value
+                    AND EXTRACT(YEAR FROM $column) = EXTRACT(YEAR FROM CURRENT_DATE)";
+
+        default:
+            http_response_code(400);
+            echo json_encode(["message" => "Invalid period type."]);
+            exit();
+    }
 }
 
+
+/* ============================================================
+   EXECUTE QUERY WRAPPER
+   ============================================================ */
 function executeQuery($con, $sql)
 {
     $result = pg_query($con, $sql);
@@ -49,23 +69,37 @@ function executeQuery($con, $sql)
     if ($result) {
         $data = pg_fetch_all($result);
         http_response_code(200);
-        echo json_encode($data ? $data : []);
+        echo json_encode($data ?: []);
     } else {
         http_response_code(500);
-        echo json_encode(["message" => "Failed to fetch report data.", "error" => pg_last_error($con)]);
+        echo json_encode([
+            "message" => "Failed to fetch report data.",
+            "error" => pg_last_error($con)
+        ]);
     }
 }
 
+
+
+/* ============================================================
+   REPORT FUNCTIONS (ALL USING YEAR/MONTH/QUARTER)
+   ============================================================ */
+
 function getPurchaseOrderReport($con, $period)
 {
-    $interval = getPeriodInterval($period);
-    $sql = "SELECT id, po_number, supplier_name, total_amount, status, po_date FROM purchase_orders WHERE po_date >= NOW() - INTERVAL '$interval'";
+    $filter = buildDateFilter("po_date", $period);
+
+    $sql = "SELECT id, po_number, supplier_name, total_amount, status, po_date
+            FROM purchase_orders
+            WHERE $filter
+            ORDER BY po_date DESC";
+
     executeQuery($con, $sql);
 }
 
 function getAssetsDisposalReport($con, $period)
 {
-    $interval = getPeriodInterval($period);
+    $filter = buildDateFilter("dr.request_date", $period);
 
     $sql = "SELECT 
                 dr.id,
@@ -81,96 +115,107 @@ function getAssetsDisposalReport($con, $period)
                 dr.notes
             FROM disposal_requests dr
             JOIN assets a ON dr.asset_id = a.id
-            WHERE dr.request_date >= NOW() - INTERVAL '$interval'
+            WHERE $filter
             ORDER BY dr.request_date DESC";
 
     executeQuery($con, $sql);
 }
 
-
 function getTransferReport($con, $period)
 {
-    $interval = getPeriodInterval($period);
-    $sql = "SELECT id, asset_id, from_department, to_department, status, request_date FROM transfer_requests WHERE request_date >= NOW() - INTERVAL '$interval'";
+    $filter = buildDateFilter("request_date", $period);
+
+    $sql = "SELECT id, asset_id, from_department, to_department, status, request_date
+            FROM transfer_requests
+            WHERE $filter
+            ORDER BY request_date DESC";
+
     executeQuery($con, $sql);
 }
 
 function getSuppliersPerformanceReport($con, $period)
 {
-    $interval = getPeriodInterval($period);
+    $filter = buildDateFilter("po.po_date", $period);
+
     $sql = "SELECT 
                 s.supplier_name,
                 COUNT(po.id) AS total_orders,
                 SUM(po.total_amount) AS total_amount
-            FROM 
-                suppliers s
-            JOIN 
-                purchase_orders po ON s.id = po.supplier_id
-            WHERE 
-                po.po_date >= NOW() - INTERVAL '$interval'
-            GROUP BY 
-                s.supplier_name
-            ORDER BY 
-                total_amount DESC";
+            FROM suppliers s
+            JOIN purchase_orders po ON s.id = po.supplier_id
+            WHERE $filter
+            GROUP BY s.supplier_name
+            ORDER BY total_amount DESC";
+
     executeQuery($con, $sql);
 }
 
 function getRequestsReport($con, $period, $status = '')
 {
-    $interval = getPeriodInterval($period);
+    $filter = buildDateFilter("created_at", $period);
 
-    $sql = "SELECT 
-                id,
-                requester_id,
-                requester_name,
-                requester_department,
-                asset_name,
-                asset_category,
-                justification,
-                estimated_cost,
-                urgency,
-                preferred_vendor,
-                status,
-                created_at
-            FROM asset_requests
-            WHERE created_at >= NOW() - INTERVAL '$interval'";
-
-    if (!empty($status)) {
-        $sql .= " AND status = '" . pg_escape_string($status) . "'";
+    if ($status) {
+        $filter .= " AND status = '" . pg_escape_string($status) . "'";
     }
 
-    $sql .= " ORDER BY created_at DESC";
+    $sql = "
+        SELECT 
+            id,
+            requester_name,
+            requester_department,
+            asset_name,
+            asset_category,
+            justification,
+            estimated_cost,
+            urgency,
+            status,
+            created_at
+        FROM asset_requests
+        WHERE $filter
+        ORDER BY created_at DESC";
 
     executeQuery($con, $sql);
 }
 
 
 
+/* ============================================================
+   SWITCH HANDLER
+   ============================================================ */
+
 switch ($reportType) {
     case 'purchase-order':
         getPurchaseOrderReport($con, $period);
         break;
+
     case 'assets-disposal':
         getAssetsDisposalReport($con, $period);
         break;
+
     case 'transfer':
         getTransferReport($con, $period);
         break;
+
     case 'suppliers-performance':
         getSuppliersPerformanceReport($con, $period);
         break;
+
     case 'requests':
         getRequestsReport($con, $period);
         break;
+
     case 'pending-requests':
         getRequestsReport($con, $period, 'pending');
         break;
+
     case 'approved-requests':
         getRequestsReport($con, $period, 'approved');
         break;
+
     case 'rejected-requests':
         getRequestsReport($con, $period, 'rejected');
         break;
+
     default:
         http_response_code(400);
         echo json_encode(["message" => "Invalid reportType specified."]);
