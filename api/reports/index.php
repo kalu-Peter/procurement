@@ -200,10 +200,21 @@ function getSuppliersPerformanceReport($con, $period, $page, $limit, $offset)
 
 function getRequestsReport($con, $period, $page, $limit, $offset, $status = '')
 {
+    // Build date filter
     $filter = buildDateFilter("created_at", $period);
 
-    if ($status) {
-        $filter .= " AND status = '" . pg_escape_string($status) . "'";
+    // Allowed statuses (all lowercase to match database)
+    $allowedStatuses = ['pending', 'approved', 'rejected', 'fulfilled'];
+
+    // Apply status filter ONLY if valid
+    if (!empty($status)) {
+
+        // Force lowercase to avoid case mismatch
+        $status = strtolower($status);
+
+        if (in_array($status, $allowedStatuses)) {
+            $filter .= " AND status = '" . pg_escape_string($status) . "'";
+        }
     }
 
     $sql = "SELECT 
@@ -225,6 +236,8 @@ function getRequestsReport($con, $period, $page, $limit, $offset, $status = '')
 
     executePaginatedQuery($con, $sql, $countSql, $page, $limit);
 }
+
+
 
 
 
@@ -263,6 +276,10 @@ switch ($reportType) {
 
     case 'rejected-requests':
         getRequestsReport($con, $period, $page, $limit, $offset, 'rejected');
+        break;
+
+    case 'fulfilled-requests':
+        getRequestsReport($con, $period, $page, $limit, $offset, 'fulfilled');
         break;
 
     default:

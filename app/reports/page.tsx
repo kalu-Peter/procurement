@@ -101,15 +101,21 @@ const ReportsPage = () => {
             className="border p-2 rounded"
           >
             <option value="">Select Report Type</option>
+
+            {/* Existing */}
             <option value="purchase-order">Purchase Order</option>
             <option value="assets-disposal">Assets Disposal</option>
             <option value="transfer">Transfer</option>
             <option value="suppliers-performance">Suppliers Performance</option>
-            <option value="requests">Requests</option>
+
+            {/* Requests */}
+            <option value="requests">All Requests</option>
             <option value="pending-requests">Pending Requests</option>
             <option value="approved-requests">Approved Requests</option>
             <option value="rejected-requests">Rejected Requests</option>
+            <option value="fulfilled-requests">Fulfilled Requests</option>
           </select>
+
           {reportType && (
             <>
               {/* YEAR SELECTOR */}
