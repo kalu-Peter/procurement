@@ -203,17 +203,16 @@ function getRequestsReport($con, $period, $page, $limit, $offset, $status = '')
     // Build date filter
     $filter = buildDateFilter("created_at", $period);
 
-    // Allowed statuses (all lowercase to match database)
+    // Allowed statuses
     $allowedStatuses = ['pending', 'approved', 'rejected', 'fulfilled'];
 
-    // Apply status filter ONLY if valid
+    // Apply case-insensitive status filter
     if (!empty($status)) {
 
-        // Force lowercase to avoid case mismatch
         $status = strtolower($status);
 
         if (in_array($status, $allowedStatuses)) {
-            $filter .= " AND status = '" . pg_escape_string($status) . "'";
+            $filter .= " AND LOWER(status) = '" . pg_escape_string($con, $status) . "'";
         }
     }
 
@@ -236,6 +235,7 @@ function getRequestsReport($con, $period, $page, $limit, $offset, $status = '')
 
     executePaginatedQuery($con, $sql, $countSql, $page, $limit);
 }
+
 
 
 
