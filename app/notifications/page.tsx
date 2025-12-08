@@ -21,9 +21,10 @@ export default function NotificationsPage() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [fetchingNotifications, setFetchingNotifications] = useState(false);
+  const [isManualFetching, setIsManualFetching] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [isPolling, setIsPolling] = useState(false);
 
   useEffect(() => {
     // Get user once on component mount
@@ -35,10 +36,15 @@ export default function NotificationsPage() {
     setUser(currentUser);
   }, [router]);
 
-  const fetchNotifications = useCallback(async () => {
+  const fetchNotifications = useCallback(async (isManual = false) => {
     if (!user) return;
 
-    setFetchingNotifications(true);
+    if (isManual) {
+      setIsManualFetching(true);
+    } else {
+      setIsPolling(true);
+    }
+
     try {
       const response = await fetch(
         `http://localhost:8000/api/notifications/index.php?user_id=${user.id}&user_role=${user.role}&limit=50`
@@ -54,15 +60,24 @@ export default function NotificationsPage() {
     } catch (error) {
       console.error("Error fetching notifications:", error);
     } finally {
-      setFetchingNotifications(false);
+      if (isManual) {
+        setIsManualFetching(false);
+      } else {
+        setIsPolling(false);
+      }
       setLoading(false);
     }
   }, [user]);
 
   useEffect(() => {
-    // Fetch notifications only when user is available
+    // Fetch notifications when user is available and then poll for updates
     if (user) {
       fetchNotifications();
+      const interval = setInterval(() => fetchNotifications(false), 5000); // Poll every 5 seconds
+
+      return () => {
+        clearInterval(interval);
+      };
     }
   }, [user, fetchNotifications]);
 
@@ -131,6 +146,8 @@ export default function NotificationsPage() {
         return "ri-exchange-line text-purple-600";
       case "disposal_request":
         return "ri-delete-bin-line text-orange-600";
+      case "supplier_application":
+        return "ri-user-add-line text-teal-600";
       default:
         return "ri-notification-line text-gray-600";
     }
@@ -148,6 +165,8 @@ export default function NotificationsPage() {
         return "bg-purple-100";
       case "disposal_request":
         return "bg-orange-100";
+      case "supplier_application":
+        return "bg-teal-100";
       default:
         return "bg-gray-100";
     }
@@ -158,13 +177,30 @@ export default function NotificationsPage() {
       if (!notification.is_read) {
         markAsRead(notification.id);
       }
-
+  
       // Navigate to related item if available
-      if (
-        notification.related_type === "asset_request" &&
-        notification.related_id
-      ) {
-        router.push(`/requests/${notification.related_id}`);
+      if (notification.related_id) {
+        let path = "";
+        switch (notification.related_type) {
+          case "asset_request":
+            path = `/requests/${notification.related_id}`;
+            break;
+          case "transfer_request":
+            path = `/transfers/${notification.related_id}`;
+            break;
+          case "disposal_request":
+            path = `/disposals/${notification.related_id}`;
+            break;
+          case "supplier_application":
+            path = `/suppliers/${notification.related_id}`;
+            break;
+          default:
+            // No navigation for this type or related_type is missing
+            break;
+        }
+        if (path) {
+          router.push(path);
+        }
       }
     },
     [markAsRead, router]
@@ -197,16 +233,16 @@ export default function NotificationsPage() {
           </div>
           <div className="flex space-x-4">
             <button
-              onClick={() => fetchNotifications()}
-              disabled={fetchingNotifications}
+              onClick={() => fetchNotifications(true)}
+              disabled={isManualFetching || isPolling}
               className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 transition-colors disabled:opacity-50 flex items-center space-x-2"
             >
               <i
                 className={`ri-refresh-line ${
-                  fetchingNotifications ? "animate-spin" : ""
+                  isManualFetching || isPolling ? "animate-spin" : ""
                 }`}
               ></i>
-              <span>{fetchingNotifications ? "Refreshing..." : "Refresh"}</span>
+              <span>{isManualFetching ? "Refreshing..." : "Refresh"}</span>
             </button>
             {unreadCount > 0 && (
               <button
@@ -225,7 +261,7 @@ export default function NotificationsPage() {
           </div>
         </div>
 
-        {fetchingNotifications && !loading && (
+        {isManualFetching && !loading && (
           <div className="mb-4 bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded flex items-center">
             <i className="ri-loader-4-line animate-spin mr-2"></i>
             Refreshing notifications...
