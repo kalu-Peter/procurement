@@ -14,13 +14,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 require_once __DIR__ . '/../config/connect.php';
 
 $category = $_GET['category'] ?? '';
+$status = $_GET['status'] ?? ''; // New status parameter
+
+$conditions = [];
+$params = [];
+$param_index = 1;
+
 if ($category) {
-    $query = "SELECT * FROM suppliers WHERE registration_category = $1";
-    $result = pg_query_params($con, $query, [$category]);
-} else {
-    $query = "SELECT * FROM suppliers ORDER BY created_at DESC";
-    $result = pg_query($con, $query);
+    $conditions[] = "registration_category = $" . $param_index++;
+    $params[] = $category;
 }
+
+if ($status) {
+    $conditions[] = "status = $" . $param_index++;
+    $params[] = $status;
+}
+
+$query = "SELECT * FROM suppliers";
+if (count($conditions) > 0) {
+    $query .= " WHERE " . implode(" AND ", $conditions);
+}
+$query .= " ORDER BY created_at DESC";
+
+
+$result = pg_query_params($con, $query, $params);
+
 
 $suppliers = [];
 if ($result) {

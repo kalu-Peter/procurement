@@ -98,7 +98,7 @@ export default function GeneratePOPage() {
     try {
       console.log("Fetching suppliers...");
       const response = await fetch(
-        "http://localhost:8000/api/suppliers/list.php"
+        "http://localhost:8000/api/suppliers/list.php?status=approved"
       );
       const data = await response.json();
 
