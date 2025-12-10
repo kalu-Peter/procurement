@@ -36,47 +36,57 @@ export default function NotificationsPage() {
     setUser(currentUser);
   }, [router]);
 
-  const fetchNotifications = useCallback(async (isManual = false) => {
-    if (!user) return;
+  const fetchNotifications = useCallback(
+    async (isManual = false) => {
+      if (!user) return;
 
-    if (isManual) {
-      setIsManualFetching(true);
-    } else {
-      setIsPolling(true);
-    }
-
-    try {
-      const response = await fetch(
-        `http://localhost:8000/api/notifications/index.php?user_id=${user.id}&user_role=${user.role}&limit=50`
-      );
-      const data = await response.json();
-
-      if (data.success) {
-        setNotifications(data.notifications);
-        setUnreadCount(data.unread_count);
-      } else {
-        console.error("Failed to fetch notifications:", data.error);
-      }
-    } catch (error) {
-      console.error("Error fetching notifications:", error);
-    } finally {
       if (isManual) {
-        setIsManualFetching(false);
+        setIsManualFetching(true);
       } else {
-        setIsPolling(false);
+        setIsPolling(true);
       }
-      setLoading(false);
-    }
-  }, [user]);
+
+      try {
+        const response = await fetch(
+          `http://localhost:8000/api/notifications/index.php?user_id=${user.id}&user_role=${user.role}&limit=50`
+        );
+        const data = await response.json();
+
+        if (data.success) {
+          setNotifications(data.notifications);
+          setUnreadCount(data.unread_count);
+        } else {
+          console.error("Failed to fetch notifications:", data.error);
+        }
+      } catch (error) {
+        console.error("Error fetching notifications:", error);
+      } finally {
+        if (isManual) {
+          setIsManualFetching(false);
+        } else {
+          setIsPolling(false);
+        }
+        setLoading(false);
+      }
+    },
+    [user]
+  );
 
   useEffect(() => {
     // Fetch notifications when user is available and then poll for updates
     if (user) {
       fetchNotifications();
-      const interval = setInterval(() => fetchNotifications(false), 5000); // Poll every 5 seconds
+
+      // Poll every 5 seconds
+      const interval = setInterval(() => fetchNotifications(false), 5000);
+
+      // Listen for updates from other components (like Header)
+      const handleExternalUpdate = () => fetchNotifications(false);
+      window.addEventListener("notificationUpdated", handleExternalUpdate);
 
       return () => {
         clearInterval(interval);
+        window.removeEventListener("notificationUpdated", handleExternalUpdate);
       };
     }
   }, [user, fetchNotifications]);
@@ -84,24 +94,36 @@ export default function NotificationsPage() {
   const markAsRead = useCallback(
     async (notificationId: string) => {
       try {
-        await fetch(`http://localhost:8000/api/notifications/mark-read.php`, {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            notification_id: notificationId,
-            user_id: user?.id,
-          }),
-        });
-
-        // Update local state
-        setNotifications((prev) =>
-          prev.map((notif) =>
-            notif.id === notificationId ? { ...notif, is_read: true } : notif
-          )
+        const response = await fetch(
+          `http://localhost:8000/api/notifications/mark-read.php`,
+          {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              notification_id: notificationId,
+              user_id: user?.id,
+            }),
+          }
         );
-        setUnreadCount((prev) => Math.max(0, prev - 1));
+
+        const data = await response.json();
+
+        if (data.success) {
+          // Update local state and sync unread count from the API response
+          setNotifications((prev) =>
+            prev.map((notif) =>
+              notif.id === notificationId ? { ...notif, is_read: true } : notif
+            )
+          );
+          setUnreadCount(data.unread_count);
+
+          // Trigger a global event to notify other components (like the Header)
+          window.dispatchEvent(new Event("notificationUpdated"));
+        } else {
+          console.error("Failed to mark notification as read:", data.error);
+        }
       } catch (error) {
         console.error("Error marking notification as read:", error);
       }
@@ -113,22 +135,34 @@ export default function NotificationsPage() {
     if (!user) return;
 
     try {
-      await fetch(`http://localhost:8000/api/notifications/mark-read.php`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          user_id: user.id,
-          mark_all: true,
-        }),
-      });
-
-      // Update local state
-      setNotifications((prev) =>
-        prev.map((notif) => ({ ...notif, is_read: true }))
+      const response = await fetch(
+        `http://localhost:8000/api/notifications/mark-read.php`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            user_id: user.id,
+            mark_all: true,
+          }),
+        }
       );
-      setUnreadCount(0);
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Update local state and sync unread count from the API response
+        setNotifications((prev) =>
+          prev.map((notif) => ({ ...notif, is_read: true }))
+        );
+        setUnreadCount(data.unread_count);
+
+        // Trigger a global event to notify other components (like the Header)
+        window.dispatchEvent(new Event("notificationUpdated"));
+      } else {
+        console.error("Failed to mark all notifications as read:", data.error);
+      }
     } catch (error) {
       console.error("Error marking all notifications as read:", error);
     }
@@ -177,7 +211,7 @@ export default function NotificationsPage() {
       if (!notification.is_read) {
         markAsRead(notification.id);
       }
-  
+
       // Navigate to related item if available
       if (notification.related_id) {
         let path = "";

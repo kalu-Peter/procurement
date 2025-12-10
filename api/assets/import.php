@@ -1,4 +1,48 @@
 <?php
+// --- Robust Error Handling & Logging ---
+ini_set('display_errors', 0);
+error_reporting(E_ALL);
+
+$logFile = __DIR__ . '/import_log.txt';
+// Clear log file at the start of a new request.
+file_put_contents($logFile, "Script start at " . date('Y-m-d H:i:s') . "\n");
+
+// This function will handle FATAL errors
+register_shutdown_function(function () use ($logFile) {
+    $error = error_get_last();
+    file_put_contents($logFile, "Shutdown function executed.\n", FILE_APPEND);
+
+    if ($error !== null && in_array($error['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR])) {
+        $errorMsg = "Fatal Error: [{$error['type']}] {$error['message']} in {$error['file']} on line {$error['line']}\n";
+        file_put_contents($logFile, $errorMsg, FILE_APPEND);
+
+        if (!headers_sent()) {
+            http_response_code(500);
+            header('Content-Type: application/json');
+        }
+        // Attempt to send JSON response, though it may fail if output has already started.
+        echo json_encode([
+            'success' => false,
+            'error' => 'A fatal server error occurred during import. Check server logs.',
+            'details' => $errorMsg
+        ]);
+    } else {
+        file_put_contents($logFile, "Script finished without fatal errors.\n", FILE_APPEND);
+    }
+});
+
+// This function will handle non-fatal errors (warnings, notices)
+set_error_handler(function($severity, $message, $file, $line) use ($logFile) {
+    if (!(error_reporting() & $severity)) {
+        return false;
+    }
+    $errorMsg = "Warning/Notice: [$severity] $message in $file on line $line\n";
+    file_put_contents($logFile, $errorMsg, FILE_APPEND);
+    
+    // Don't exit on warnings, just log them. The script might be able to continue.
+    return true; // Suppress default PHP handler
+});
+
 require_once '../config/connect.php';
 require_once '../../vendor/autoload.php';
 

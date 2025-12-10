@@ -106,7 +106,6 @@ const ReportsPage = () => {
             <option value="purchase-order">Purchase Order</option>
             <option value="assets-disposal">Assets Disposal</option>
             <option value="transfer">Transfer</option>
-            <option value="suppliers-performance">Suppliers Performance</option>
 
             {/* Requests */}
             <option value="requests">All Requests</option>

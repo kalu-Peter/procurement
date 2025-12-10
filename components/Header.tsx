@@ -51,24 +51,36 @@ export default function Header({ user, onLogout }: HeaderProps) {
 
   const markAsRead = async (notificationId: string) => {
     try {
-      await fetch(`http://localhost:8000/api/notifications/mark-read.php`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          notification_id: notificationId,
-          user_id: user?.id,
-        }),
-      });
-
-      // Update local state
-      setNotifications((prev) =>
-        prev.map((notif) =>
-          notif.id === notificationId ? { ...notif, is_read: true } : notif
-        )
+      const response = await fetch(
+        `http://localhost:8000/api/notifications/mark-read.php`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            notification_id: notificationId,
+            user_id: user?.id,
+          }),
+        }
       );
-      setUnreadCount((prev) => Math.max(0, prev - 1));
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Update local state and sync unread count from the API response
+        setNotifications((prev) =>
+          prev.map((notif) =>
+            notif.id === notificationId ? { ...notif, is_read: true } : notif
+          )
+        );
+        setUnreadCount(data.unread_count);
+
+        // Trigger a global event to notify other components (like the Notifications Page)
+        window.dispatchEvent(new Event("notificationUpdated"));
+      } else {
+        console.error("Failed to mark notification as read:", data.error);
+      }
     } catch (error) {
       console.error("Error marking notification as read:", error);
     }
@@ -78,22 +90,34 @@ export default function Header({ user, onLogout }: HeaderProps) {
     if (!user) return;
 
     try {
-      await fetch(`http://localhost:8000/api/notifications/mark-read.php`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          user_id: user.id,
-          mark_all: true,
-        }),
-      });
-
-      // Update local state
-      setNotifications((prev) =>
-        prev.map((notif) => ({ ...notif, is_read: true }))
+      const response = await fetch(
+        `http://localhost:8000/api/notifications/mark-read.php`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            user_id: user.id,
+            mark_all: true,
+          }),
+        }
       );
-      setUnreadCount(0);
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Update local state and sync unread count from the API response
+        setNotifications((prev) =>
+          prev.map((notif) => ({ ...notif, is_read: true }))
+        );
+        setUnreadCount(data.unread_count);
+
+        // Trigger a global event to notify other components
+        window.dispatchEvent(new Event("notificationUpdated"));
+      } else {
+        console.error("Failed to mark all notifications as read:", data.error);
+      }
     } catch (error) {
       console.error("Error marking all notifications as read:", error);
     }
@@ -101,11 +125,23 @@ export default function Header({ user, onLogout }: HeaderProps) {
 
   useEffect(() => {
     if (user) {
+      // Initial fetch
       fetchNotifications();
 
       // Set up polling for new notifications every 30 seconds
       const interval = setInterval(fetchNotifications, 30000);
-      return () => clearInterval(interval);
+
+      // Listen for updates from other components (like the Notifications Page)
+      const handleExternalUpdate = () => {
+        fetchNotifications();
+      };
+
+      window.addEventListener("notificationUpdated", handleExternalUpdate);
+
+      return () => {
+        clearInterval(interval);
+        window.removeEventListener("notificationUpdated", handleExternalUpdate);
+      };
     }
   }, [user]);
 

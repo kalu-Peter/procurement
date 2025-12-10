@@ -66,13 +66,14 @@ export default function ImportAssetsPage() {
 
     setLoading(true);
     setErrors([]);
+    setSuccess(false);
+
+    const formData = new FormData();
+    formData.append("excel_file", file);
+    formData.append("user_role", user?.role || "");
+    formData.append("user_department", user?.department || "");
 
     try {
-      const formData = new FormData();
-      formData.append("excel_file", file);
-      formData.append("user_role", user?.role || "");
-      formData.append("user_department", user?.department || "");
-
       const response = await fetch(
         "http://localhost:8000/api/assets/import.php",
         {
@@ -81,19 +82,57 @@ export default function ImportAssetsPage() {
         }
       );
 
-      const data = await response.json();
+      const responseText = await response.text();
 
-      if (data.success) {
-        setSuccess(true);
-        setTimeout(() => {
-          window.location.href = "/assets";
-        }, 3000);
-      } else {
-        setErrors([data.error || "Import failed. Please try again."]);
+      try {
+        const data = JSON.parse(responseText);
+
+        if (data.success) {
+          setSuccess(true);
+          const resultSummary = [`Successfully imported: ${data.imported} assets.`];
+          if (data.failed > 0) {
+            resultSummary.push(`Failed to import: ${data.failed} assets.`);
+            // Combine summary with specific errors from the backend
+            setErrors([...resultSummary, ...data.errors]);
+          } else {
+            // Even on full success, show the summary message
+            setErrors(resultSummary);
+          }
+
+          setTimeout(() => {
+            window.location.href = "/assets";
+          }, 5000);
+        } else {
+          // Handle structured JSON errors from the API
+          const apiErrors = [];
+          if (data.error) {
+            apiErrors.push(data.error);
+          }
+          if (data.details) {
+            // Add the crucial details for debugging
+            apiErrors.push(data.details);
+          }
+          if (data.errors && data.errors.length > 0) {
+            apiErrors.push(...data.errors);
+          }
+          if (apiErrors.length === 0) {
+            apiErrors.push("An unknown import error occurred.");
+          }
+          setErrors(apiErrors);
+        }
+      } catch (e) {
+        // This catches JSON parsing errors if the server returns HTML, etc.
+        console.error("Failed to parse JSON response:", responseText);
+        setErrors([
+          "An unexpected server error occurred (invalid JSON response).",
+          `Details: ${responseText.substring(0, 500)}...`,
+        ]);
       }
     } catch (error) {
-      console.error("Import error:", error);
-      setErrors(["Import failed. Please try again."]);
+      console.error("Import network error:", error);
+      setErrors([
+        "A network error occurred. Please check your connection and try again.",
+      ]);
     } finally {
       setLoading(false);
     }

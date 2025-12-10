@@ -49,10 +49,30 @@ if (!$result) {
 
 $affected_rows = pg_affected_rows($result);
 
+$count_user_id = $user_id;
+if (empty($count_user_id) && !empty($notification_id)) {
+    $uidQuery = "SELECT user_id FROM notifications WHERE id = $1";
+    $uidResult = pg_query_params($con, $uidQuery, [$notification_id]);
+    if ($uidResult && pg_num_rows($uidResult) > 0) {
+        $count_user_id = pg_fetch_assoc($uidResult)['user_id'];
+    }
+}
+
+$newUnreadCount = 0;
+if (!empty($count_user_id)) {
+    $countQuery = "SELECT COUNT(*) as unread_count FROM notifications WHERE user_id = $1 AND is_read = false";
+    $countResult = pg_query_params($con, $countQuery, [$count_user_id]);
+    if ($countResult) {
+        $row = pg_fetch_assoc($countResult);
+        $newUnreadCount = (int)$row['unread_count'];
+    }
+}
+
 echo json_encode([
     'success' => true,
     'message' => $mark_all ? 'All notifications marked as read' : 'Notification marked as read',
-    'affected_rows' => $affected_rows
+    'affected_rows' => $affected_rows,
+    'unread_count' => $newUnreadCount
 ]);
 
 pg_close($con);
