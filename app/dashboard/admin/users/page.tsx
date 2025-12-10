@@ -546,14 +546,7 @@ export default function UserManagementPage() {
             <p className="text-gray-600 text-sm">Dept. Heads</p>
           </div>
         </div>
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-          <div className="text-center">
-            <p className="text-2xl font-bold text-orange-600">
-              {stats.suppliers}
-            </p>
-            <p className="text-gray-600 text-sm">Suppliers</p>
-          </div>
-        </div>
+
       </div>
 
       {/* Edit User Modal */}
