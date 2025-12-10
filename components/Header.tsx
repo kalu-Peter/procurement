@@ -373,12 +373,6 @@ export default function Header({ user, onLogout }: HeaderProps) {
                       </p>
                     </div>
                     <Link
-                      href="/settings"
-                      className="block px-4 py-2 text-gray-700 hover:bg-gray-50 cursor-pointer"
-                    >
-                      Settings
-                    </Link>
-                    <Link
                       href="/notifications"
                       className="block px-4 py-2 text-gray-700 hover:bg-gray-50 cursor-pointer"
                     >
