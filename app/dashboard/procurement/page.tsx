@@ -5,21 +5,62 @@ import { useRouter } from 'next/navigation';
 import { getCurrentUser } from '@/lib/auth';
 import Link from 'next/link';
 
+interface DashboardStats {
+  pending_requests: number;
+  approved_requests: number;
+  total_assets: number;
+}
+
 export default function ProcurementDashboard() {
   const router = useRouter();
   const user = getCurrentUser();
   const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState<DashboardStats>({
+    pending_requests: 0,
+    approved_requests: 0,
+    total_assets: 0,
+  });
 
   useEffect(() => {
     if (!user || user.role !== 'procurement_officer') {
       router.push('/');
       return;
     }
-    setLoading(false);
+
+    const fetchStats = async () => {
+      try {
+        const [requestsRes, assetsRes] = await Promise.all([
+          fetch('http://localhost:8000/api/asset-requests/index.php?user_role=procurement_officer'),
+          fetch('http://localhost:8000/api/dashboard_stats.php')
+        ]);
+
+        const requestsData = await requestsRes.json();
+        const assetsData = await assetsRes.json();
+
+        setStats({
+          pending_requests: requestsData.stats.pending || 0,
+          approved_requests: requestsData.stats.approved || 0,
+          total_assets: assetsData.statistics.total_assets || 0,
+        });
+      } catch (error) {
+        console.error('Failed to fetch dashboard stats', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStats();
   }, [router, user]);
 
   if (loading) {
-    return <div>Loading...</div>;
+    return (
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading Dashboard...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -33,15 +74,15 @@ export default function ProcurementDashboard() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <div className="bg-blue-500 text-white rounded-lg shadow-lg p-6">
             <h3 className="text-lg font-semibold mb-2">Pending Requests</h3>
-            <p className="text-3xl font-bold">loading...</p>
+            <p className="text-3xl font-bold">{stats.pending_requests}</p>
           </div>
           <div className="bg-green-500 text-white rounded-lg shadow-lg p-6">
             <h3 className="text-lg font-semibold mb-2">Approved Requests</h3>
-            <p className="text-3xl font-bold">loading...</p>
+            <p className="text-3xl font-bold">{stats.approved_requests}</p>
           </div>
           <div className="bg-yellow-500 text-white rounded-lg shadow-lg p-6">
             <h3 className="text-lg font-semibold mb-2">Total Assets</h3>
-            <p className="text-3xl font-bold">loading...</p>
+            <p className="text-3xl font-bold">{stats.total_assets}</p>
           </div>
         </div>
 
