@@ -31,7 +31,7 @@ export default function PublicNav({ currentPage = "home" }: PublicNavProps) {
             <Link href="/" className="flex items-center space-x-2">
               <img src="/logo.png" alt="Logo" className="h-10 w-auto" />
               <span className="text-2xl font-bold text-gray-800 font-pacifico">
-                TUM Procurement
+                Procurement
               </span>
             </Link>
           </div>
