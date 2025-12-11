@@ -194,14 +194,6 @@ export default function LoginPage() {
                 </div>
 
                 <div className="mt-4 text-sm text-center text-gray-600">
-                  Don't have an account?{" "}
-                  <a
-                    href="/register"
-                    className="text-bs-green hover:text-green-700 font-medium"
-                  >
-                    Register here
-                  </a>
-                  {" | "}
                   <button
                     type="button"
                     onClick={() => setShowForgotPasswordModal(true)}
