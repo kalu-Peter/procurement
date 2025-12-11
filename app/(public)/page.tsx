@@ -5,20 +5,19 @@ import Link from "next/link";
 export default function Home() {
   return (
     <div className="min-h-screen bg-gray-50">
-
       {/* Hero Section */}
       <section
         className="relative bg-gradient-to-r from-blue-600 to-blue-800 text-white bg-cover bg-center"
         style={{ backgroundImage: "url('/TUM1.jpg')" }}
       >
         <div className="absolute inset-0 bg-black opacity-50"></div>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 relative z-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 relative z-10 min-h-[400px]">
           <div className="text-center">
             <h1 className="text-4xl md:text-6xl font-bold mb-6">
               University Smart Asset Management System
             </h1>
             <p className="text-xl md:text-2xl mb-8 text-blue-100">
-              Streamline your procurement processes with our comprehensive asset
+              Streamline TUM procurement processes with our comprehensive asset
               management system
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
