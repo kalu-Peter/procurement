@@ -187,25 +187,7 @@ export default function DepartmentDashboard() {
             </div>
           </div>
 
-          <div className="bg-white rounded-lg shadow-lg p-6">
-            <h2 className="text-xl font-semibold mb-4 text-gray-800">
-              Reports & Analytics
-            </h2>
-            <div className="space-y-4">
-              <Link
-                href="/reports/department-assets"
-                className="block bg-orange-500 text-white px-4 py-2 rounded hover:bg-orange-600 text-center transition-colors"
-              >
-                Asset Reports
-              </Link>
-              <Link
-                href="/reports/department-usage"
-                className="block bg-gray-100 text-gray-700 px-4 py-2 rounded hover:bg-gray-200 text-center transition-colors"
-              >
-                Usage Reports
-              </Link>
-            </div>
-          </div>
+
         </div>
       </div>
     </div>
