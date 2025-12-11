@@ -96,8 +96,6 @@ export default function LoginPage() {
       <div className="absolute inset-0 bg-black bg-opacity-40"></div>
 
       <div className="relative z-10">
-        <PublicNav currentPage="login" />
-
         <div className="flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
           <div className="max-w-md w-full space-y-8">
             <form className="mt-8 space-y-6" onSubmit={handleSubmit}>

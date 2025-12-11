@@ -1,12 +1,10 @@
 "use client";
 
-import PublicNav from "@/components/PublicNav";
 import Link from "next/link";
 
 export default function AboutPage() {
   return (
     <div className="min-h-screen bg-gray-50">
-      <PublicNav currentPage="about" />
 
       {/* Hero Section */}
       <section className="bg-white py-16">
