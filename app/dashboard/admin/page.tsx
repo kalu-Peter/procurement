@@ -302,6 +302,25 @@ export default function AdminDashboard() {
           </div>
           <div className="bg-white rounded-lg shadow-lg p-6">
             <h2 className="text-xl font-semibold mb-4 text-gray-800">
+              Tender Management
+            </h2>
+            <div className="space-y-4">
+              <Link
+                href="/tenders/new"
+                className="block bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 text-center transition-colors"
+              >
+                Create Tender
+              </Link>
+              <Link
+                href="/tenders"
+                className="block bg-gray-100 text-gray-700 px-4 py-2 rounded hover:bg-gray-200 text-center transition-colors"
+              >
+                View Tenders
+              </Link>
+            </div>
+          </div>
+          <div className="bg-white rounded-lg shadow-lg p-6">
+            <h2 className="text-xl font-semibold mb-4 text-gray-800">
               Activity Reports
             </h2>
             <div className="space-y-4">

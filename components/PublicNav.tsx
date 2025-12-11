@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 
 interface PublicNavProps {
-  currentPage?: "home" | "about" | "login" | "supplier-registration";
+  currentPage?: "home" | "about" | "login" | "supplier-registration" | "tenders";
 }
 
 export default function PublicNav({ currentPage = "home" }: PublicNavProps) {
@@ -14,6 +14,7 @@ export default function PublicNav({ currentPage = "home" }: PublicNavProps) {
   const navItems = [
     { name: "Home", href: "/", key: "home" },
     { name: "About", href: "/about", key: "about" },
+    { name: "Tenders", href: "/tenders", key: "tenders" },
     {
       name: "Supplier Registration",
       href: "/suppliers",
