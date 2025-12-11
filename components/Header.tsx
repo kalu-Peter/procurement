@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import { User, getCurrentUser, logoutUser } from "@/lib/auth";
 
@@ -27,6 +27,7 @@ export default function Header({ user, onLogout }: HeaderProps) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(false);
+  const pathname = usePathname();
 
   const fetchNotifications = async () => {
     if (!user) return;
@@ -178,37 +179,61 @@ export default function Header({ user, onLogout }: HeaderProps) {
               <nav className="hidden md:flex space-x-6">
                 <Link
                   href="/dashboard"
-                  className="text-gray-700 hover:text-gray-900 font-medium whitespace-nowrap"
+                  className={`whitespace-nowrap ${
+                    pathname === "/dashboard"
+                      ? "font-semibold text-gray-900 border-b-2 border-gray-900"
+                      : "text-gray-700 hover:text-gray-900"
+                  }`}
                 >
                   Dashboard
                 </Link>
                 <Link
                   href="/assets"
-                  className="text-gray-700 hover:text-gray-900 font-medium whitespace-nowrap"
+                  className={`whitespace-nowrap ${
+                    pathname.startsWith("/assets")
+                      ? "font-semibold text-gray-900 border-b-2 border-gray-900"
+                      : "text-gray-700 hover:text-gray-900"
+                  }`}
                 >
                   Assets
                 </Link>
                 <Link
                   href="/transfers"
-                  className="text-gray-700 hover:text-gray-900 font-medium whitespace-nowrap"
+                  className={`whitespace-nowrap ${
+                    pathname.startsWith("/transfers")
+                      ? "font-semibold text-gray-900 border-b-2 border-gray-900"
+                      : "text-gray-700 hover:text-gray-900"
+                  }`}
                 >
                   Transfers
                 </Link>
                 <Link
                   href="/disposals"
-                  className="text-gray-700 hover:text-gray-900 font-medium whitespace-nowrap"
+                  className={`whitespace-nowrap ${
+                    pathname.startsWith("/disposals")
+                      ? "font-semibold text-gray-900 border-b-2 border-gray-900"
+                      : "text-gray-700 hover:text-gray-900"
+                  }`}
                 >
                   Disposals
                 </Link>
                 <Link
                   href="/suppliers-list"
-                  className="text-gray-700 hover:text-gray-900 font-medium whitespace-nowrap"
+                  className={`whitespace-nowrap ${
+                    pathname.startsWith("/suppliers-list")
+                      ? "font-semibold text-gray-900 border-b-2 border-gray-900"
+                      : "text-gray-700 hover:text-gray-900"
+                  }`}
                 >
                   Suppliers
                 </Link>
                 <Link
                   href="/reports"
-                  className="text-gray-700 hover:text-gray-900 font-medium whitespace-nowrap"
+                  className={`whitespace-nowrap ${
+                    pathname.startsWith("/reports")
+                      ? "font-semibold text-gray-900 border-b-2 border-gray-900"
+                      : "text-gray-700 hover:text-gray-900"
+                  }`}
                 >
                   Reports
                 </Link>
@@ -218,7 +243,11 @@ export default function Header({ user, onLogout }: HeaderProps) {
                   <>
                     <Link
                       href="/purchase-orders"
-                      className="text-gray-700 hover:text-gray-900 font-medium whitespace-nowrap"
+                      className={`whitespace-nowrap ${
+                        pathname.startsWith("/purchase-orders")
+                          ? "font-semibold text-gray-900 border-b-2 border-gray-900"
+                          : "text-gray-700 hover:text-gray-900"
+                      }`}
                     >
                       Purchase Orders
                     </Link>
