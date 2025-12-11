@@ -12,19 +12,16 @@ export default function DashboardLayout({
 }) {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
-    const checkUser = () => {
-      const currentUser = getCurrentUser();
-      if (!currentUser) {
-        router.push('/');
-      } else {
-        setUser(currentUser);
-        setLoading(false);
-      }
-    };
-    checkUser();
+    setIsMounted(true);
+    const currentUser = getCurrentUser();
+    if (!currentUser) {
+      router.push('/');
+    } else {
+      setUser(currentUser);
+    }
   }, [router]);
 
   const handleLogout = () => {
@@ -32,7 +29,7 @@ export default function DashboardLayout({
     window.location.href = '/';
   };
 
-  if (loading) {
+  if (!isMounted) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -44,7 +41,7 @@ export default function DashboardLayout({
   }
 
   if (!user) {
-    return null; // Or a redirect component
+    return null; // Still loading or redirecting
   }
 
   return (
