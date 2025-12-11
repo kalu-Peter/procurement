@@ -62,6 +62,19 @@ try {
         exit;
     }
 
+    // Log activity
+    $log_query = "INSERT INTO activity_logs (user_id, user_email, action, resource_type, details, ip_address, user_agent) VALUES ($1, $2, $3, $4, $5, $6, $7)";
+    $log_params = [
+        $user['id'],
+        $user['email'],
+        'login',
+        'user',
+        'User logged in successfully',
+        $_SERVER['REMOTE_ADDR'] ?? 'unknown',
+        $_SERVER['HTTP_USER_AGENT'] ?? 'unknown'
+    ];
+    pg_query_params($con, $log_query, $log_params);
+
     // Remove sensitive fields before returning user
     unset($user['password_hash']);
 

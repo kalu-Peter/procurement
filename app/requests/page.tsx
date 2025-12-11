@@ -80,6 +80,45 @@ export default function RequestsPage() {
     }
   };
 
+  const handleUpdateRequest = async (
+    requestId: string,
+    action: "approve" | "reject"
+  ) => {
+    try {
+      const response = await fetch(
+        "http://localhost:8000/api/asset-requests/update.php",
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            id: requestId,
+            action: action,
+            user_role: user?.role,
+            admin_id: user?.id,
+          }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Update the request in the local state
+        setRequests((prevRequests) =>
+          prevRequests.map((req) =>
+            req.id === requestId ? { ...req, status: data.status } : req
+          )
+        );
+      } else {
+        console.error("Failed to update request:", data.error);
+        alert(`Error: ${data.error}`);
+      }
+    } catch (error) {
+      console.error("Error updating request:", error);
+    }
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case "pending":
@@ -123,19 +162,21 @@ export default function RequestsPage() {
           <div className="flex justify-between items-center mb-8">
             <div>
               <h1 className="text-3xl font-bold text-gray-900">
-                My Asset Requests
+                Asset Requests
               </h1>
               <p className="text-gray-600 mt-2">
-                Track your asset requisition requests
+                Manage and track asset requisition requests
               </p>
             </div>
-            <Link
-              href="/requests/new"
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition duration-200 flex items-center space-x-2"
-            >
-              <i className="ri-add-line"></i>
-              <span>New Request</span>
-            </Link>
+            {user?.role !== 'procurement_officer' && (
+              <Link
+                href="/requests/new"
+                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition duration-200 flex items-center space-x-2"
+              >
+                <i className="ri-add-line"></i>
+                <span>New Request</span>
+              </Link>
+            )}
           </div>
 
           {/* Statistics Cards */}
@@ -212,7 +253,7 @@ export default function RequestsPage() {
                         Asset
                       </th>
                       <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
-                        Category
+                        Requester
                       </th>
                       <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
                         Status
@@ -244,14 +285,8 @@ export default function RequestsPage() {
                               No requests found
                             </h3>
                             <p className="text-gray-600 mb-4">
-                              You haven't submitted any asset requests yet.
+                              No asset requests match the current filters.
                             </p>
-                            <Link
-                              href="/requests/new"
-                              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition duration-200"
-                            >
-                              Submit Your First Request
-                            </Link>
                           </div>
                         </td>
                       </tr>
@@ -263,15 +298,11 @@ export default function RequestsPage() {
                               <div className="text-sm font-medium text-gray-900">
                                 {request.asset_name}
                               </div>
-                              {request.asset_description && (
-                                <div className="text-sm text-gray-500 truncate max-w-xs">
-                                  {request.asset_description}
-                                </div>
-                              )}
                             </div>
                           </td>
-                          <td className="px-6 py-4 text-sm text-gray-900">
-                            {request.asset_category}
+                          <td className="px-6 py-4">
+                            <div className="text-sm font-medium text-gray-900">{request.requester_name}</div>
+                            <div className="text-sm text-gray-500">{request.requester_department}</div>
                           </td>
                           <td className="px-6 py-4">
                             <span
@@ -301,13 +332,33 @@ export default function RequestsPage() {
                             {new Date(request.created_at).toLocaleDateString()}
                           </td>
                           <td className="px-6 py-4">
-                            <Link
-                              href={`/requests/${request.id}`}
-                              className="text-blue-600 hover:text-blue-800 text-sm"
-                            >
-                              <i className="ri-eye-line mr-1"></i>
-                              View Details
-                            </Link>
+                            <div className="flex items-center space-x-4">
+                              <Link
+                                href={`/requests/${request.id}`}
+                                className="text-blue-600 hover:text-blue-800 text-sm"
+                              >
+                                <i className="ri-eye-line mr-1"></i>
+                                Details
+                              </Link>
+                              {user?.role === 'procurement_officer' && request.status === 'pending' && (
+                                <>
+                                  <button
+                                    onClick={() => handleUpdateRequest(request.id, 'approve')}
+                                    className="text-green-600 hover:text-green-800 text-sm"
+                                  >
+                                    <i className="ri-check-line mr-1"></i>
+                                    Approve
+                                  </button>
+                                  <button
+                                    onClick={() => handleUpdateRequest(request.id, 'reject')}
+                                    className="text-red-600 hover:text-red-800 text-sm"
+                                  >
+                                    <i className="ri-close-line mr-1"></i>
+                                    Reject
+                                  </button>
+                                </>
+                              )}
+                            </div>
                           </td>
                         </tr>
                       ))

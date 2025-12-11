@@ -236,10 +236,29 @@ function getRequestsReport($con, $period, $page, $limit, $offset, $status = '')
     executePaginatedQuery($con, $sql, $countSql, $page, $limit);
 }
 
+function getActivityLogsReport($con, $period, $page, $limit, $offset)
+{
+    $filter = buildDateFilter("timestamp", $period);
 
+    $sql = "SELECT 
+                id,
+                user_id,
+                user_email,
+                action,
+                resource_type,
+                details,
+                ip_address,
+                user_agent,
+                timestamp
+            FROM activity_logs
+            WHERE $filter
+            ORDER BY timestamp DESC
+            LIMIT $limit OFFSET $offset";
 
+    $countSql = "SELECT COUNT(*) FROM activity_logs WHERE $filter";
 
-
+    executePaginatedQuery($con, $sql, $countSql, $page, $limit);
+}
 
 /* =======================================
    SWITCH HANDLER
@@ -280,6 +299,10 @@ switch ($reportType) {
 
     case 'fulfilled-requests':
         getRequestsReport($con, $period, $page, $limit, $offset, 'fulfilled');
+        break;
+
+    case 'activity-logs':
+        getActivityLogsReport($con, $period, $page, $limit, $offset);
         break;
 
     default:
