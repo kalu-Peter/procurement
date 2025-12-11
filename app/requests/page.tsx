@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import Header from "@/components/Header";
 import Link from "next/link";
@@ -36,6 +37,7 @@ export default function RequestsPage() {
     rejected: 0,
     fulfilled: 0,
   });
+  const searchParams = useSearchParams();
 
   const handleLogout = () => {
     localStorage.removeItem("currentUser");
@@ -46,14 +48,19 @@ export default function RequestsPage() {
     if (user) {
       fetchRequests();
     }
-  }, [user]);
+  }, [user, searchParams]);
 
   const fetchRequests = async () => {
     try {
+      const status = searchParams.get("status");
       const params = new URLSearchParams({
         user_id: user?.id || "",
         user_role: user?.role || "",
       });
+
+      if (status) {
+        params.append("status", status);
+      }
 
       const response = await fetch(
         `http://localhost:8000/api/asset-requests/index.php?${params}`
