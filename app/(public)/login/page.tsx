@@ -108,7 +108,7 @@ export default function LoginPage() {
                 {/* Welcome Text */}
                 <div className="text-center mb-6">
                   <p className="text-sm text-gray-600">
-                    Sign in to access TUM Procurement System
+                    TUM Procurement System
                   </p>
                 </div>
 
