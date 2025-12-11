@@ -42,6 +42,16 @@ try {
         $total_assets = (int)$assets_row['total'];
     }
 
+    // Get total asset value
+    $asset_value_query = "SELECT SUM(current_value) as total_value FROM assets WHERE (status IS NULL OR status != 'Deleted')";
+    $asset_value_result = pg_query($con, $asset_value_query);
+    $total_asset_value = 0;
+
+    if ($asset_value_result) {
+        $asset_value_row = pg_fetch_assoc($asset_value_result);
+        $total_asset_value = (float)$asset_value_row['total_value'];
+    }
+
     // Get active transfers count (pending status)
     // table used in transfer endpoints: transfer_requests, status uses 'Pending'
     $transfers_query = "SELECT COUNT(*) as total FROM transfer_requests WHERE status = 'Pending'";
@@ -77,6 +87,7 @@ try {
         "success" => true,
         "statistics" => [
             "total_assets" => $total_assets,
+            "total_asset_value" => $total_asset_value,
             "active_transfers" => $active_transfers,
             "pending_disposals" => $pending_disposals
         ]

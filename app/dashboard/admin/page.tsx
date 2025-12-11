@@ -11,6 +11,7 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
     total_assets: 0,
+    total_asset_value: 0,
     active_transfers: 0,
     pending_disposals: 0,
   });
@@ -60,7 +61,7 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           <Link
             href="/assets"
             className="bg-blue-500 text-white rounded-lg shadow-lg p-6 hover:bg-blue-600 transition-colors cursor-pointer"
@@ -79,6 +80,21 @@ export default function AdminDashboard() {
               </div>
             </div>
           </Link>
+          <div className="bg-yellow-500 text-white rounded-lg shadow-lg p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-semibold mb-2">Total Asset Value</h3>
+                <p className="text-3xl font-bold">
+                  {statsLoading
+                    ? "Loading..."
+                    : `KES ${stats.total_asset_value.toLocaleString()}`}
+                </p>
+              </div>
+              <div className="text-4xl opacity-80">
+                <i className="ri-money-dollar-circle-line"></i>
+              </div>
+            </div>
+          </div>
           <Link
             href="/transfers"
             className="bg-green-500 text-white rounded-lg shadow-lg p-6 hover:bg-green-600 transition-colors cursor-pointer"
