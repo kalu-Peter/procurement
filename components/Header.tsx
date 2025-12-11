@@ -170,9 +170,7 @@ export default function Header({ user, onLogout }: HeaderProps) {
           <div className="flex items-center space-x-8">
             <Link href="/dashboard" className="flex items-center space-x-2">
               <img src="/logo.png" alt="Logo" className="h-8 w-auto" />
-              <span className="text-2xl font-bold text-gray-800 font-pacifico">
-                TUM Procurement
-              </span>
+              <span className="text-2xl font-bold text-gray-800 font-pacifico"></span>
             </Link>
 
             {user && (
