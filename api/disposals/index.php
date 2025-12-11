@@ -16,6 +16,35 @@ $type = isset($_GET['type']) ? $_GET['type'] : 'requests'; // requests or record
 $department = isset($_GET['department']) ? $_GET['department'] : '';
 $record_status = isset($_GET['record_status']) ? $_GET['record_status'] : ''; // For filtering records by approved/rejected
 
+// Get user ID and details
+$user_id = isset($_GET['user_id']) ? $_GET['user_id'] : null;
+$user_role = '';
+$user_department = '';
+
+if ($user_id) {
+    $user_query = "SELECT role, department FROM users WHERE id = $1";
+    $user_result = pg_query_params($con, $user_query, [$user_id]);
+    
+    if ($user_result && pg_num_rows($user_result) > 0) {
+        $user_details = pg_fetch_assoc($user_result);
+        $user_role = $user_details['role'];
+        $user_department = $user_details['department'];
+    }
+}
+
+$is_privileged_user = ($user_role === 'admin' || $user_role === 'procurement_officer');
+
+// If a non-privileged user is trying to access all departments, restrict to their own
+if (!$is_privileged_user && empty($department)) {
+    $department = $user_department;
+}
+// If a non-privileged user is trying to access a department that is not their own, block it.
+else if (!$is_privileged_user && !empty($department) && $department !== $user_department) {
+    echo json_encode(['success' => false, 'error' => 'You are not authorized to view disposals for this department']);
+    exit;
+}
+
+
 if ($type === 'requests') {
     // For disposal requests, show only PENDING requests
     // First, build the manual disposal requests query

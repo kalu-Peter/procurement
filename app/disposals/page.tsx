@@ -44,8 +44,11 @@ export default function DisposalsPage() {
       // Fetch requests (only pending)
       const requestParams = new URLSearchParams();
       requestParams.append("type", "requests");
-      if (user?.department && user?.role !== "admin") {
+      if (user?.department && user?.role !== "admin" && user?.role !== "procurement_officer") {
         requestParams.append("department", user.department);
+      }
+      if(user) {
+        requestParams.append("user_id", user.id);
       }
 
       const requestsResponse = await fetch(
@@ -59,8 +62,11 @@ export default function DisposalsPage() {
       // Fetch records (all approved and rejected)
       const recordParams = new URLSearchParams();
       recordParams.append("type", "records");
-      if (user?.department && user?.role !== "admin") {
+      if (user?.department && user?.role !== "admin" && user?.role !== "procurement_officer") {
         recordParams.append("department", user.department);
+      }
+      if(user) {
+        recordParams.append("user_id", user.id);
       }
 
       const recordsResponse = await fetch(
@@ -84,9 +90,11 @@ export default function DisposalsPage() {
       const params = new URLSearchParams();
       params.append("type", activeTab);
 
-      // Only add department filter for non-admin users
-      if (user?.department && user?.role !== "admin") {
+      if (user?.department && user?.role !== "admin" && user?.role !== "procurement_officer") {
         params.append("department", user.department);
+      }
+      if(user) {
+        params.append("user_id", user.id);
       }
 
       // Add record status filter for records tab
@@ -156,8 +164,11 @@ export default function DisposalsPage() {
         // Refresh both requests and records since approved/rejected items move between tabs
         const requestParams = new URLSearchParams();
         requestParams.append("type", "requests");
-        if (user?.department && user?.role !== "admin") {
+        if (user?.department && user?.role !== "admin" && user?.role !== "procurement_officer") {
           requestParams.append("department", user.department);
+        }
+        if(user) {
+            requestParams.append("user_id", user.id);
         }
 
         const requestsResponse = await fetch(
@@ -170,8 +181,11 @@ export default function DisposalsPage() {
 
         const recordParams = new URLSearchParams();
         recordParams.append("type", "records");
-        if (user?.department && user?.role !== "admin") {
+        if (user?.department && user?.role !== "admin" && user?.role !== "procurement_officer") {
           recordParams.append("department", user.department);
+        }
+        if(user) {
+            recordParams.append("user_id", user.id);
         }
 
         const recordsResponse = await fetch(
@@ -356,8 +370,11 @@ export default function DisposalsPage() {
         // Refresh both requests and records since rejected items move to records
         const requestParams = new URLSearchParams();
         requestParams.append("type", "requests");
-        if (user?.department && user?.role !== "admin") {
+        if (user?.department && user?.role !== "admin" && user?.role !== "procurement_officer") {
           requestParams.append("department", user.department);
+        }
+        if(user) {
+            requestParams.append("user_id", user.id);
         }
 
         const requestsResponse = await fetch(
@@ -370,8 +387,11 @@ export default function DisposalsPage() {
 
         const recordParams = new URLSearchParams();
         recordParams.append("type", "records");
-        if (user?.department && user?.role !== "admin") {
+        if (user?.department && user?.role !== "admin" && user?.role !== "procurement_officer") {
           recordParams.append("department", user.department);
+        }
+        if(user) {
+            recordParams.append("user_id", user.id);
         }
 
         const recordsResponse = await fetch(
@@ -408,7 +428,7 @@ export default function DisposalsPage() {
                 Asset Disposals
               </h1>
               <p className="text-gray-600 mt-2">
-                {user?.role === "admin"
+                {user?.role === "admin" || user?.role === "procurement_officer"
                   ? "Manage disposal requests and records for all departments"
                   : `Manage disposal requests and records for ${
                       user?.department
@@ -514,7 +534,7 @@ export default function DisposalsPage() {
                         No Disposal Requests
                       </h3>
                       <p className="text-gray-500 mb-4">
-                        {user?.role === "admin"
+                        {user?.role === "admin" || user?.role === "procurement_officer"
                           ? "There are no pending disposal requests from any department at the moment."
                           : `There are no pending disposal requests for ${
                               user?.department
@@ -605,7 +625,7 @@ export default function DisposalsPage() {
                                     <i className="ri-eye-line"></i>
                                   </button>
                                   {request.status === "Pending" &&
-                                    user?.role === "admin" && (
+                                    user?.role === "admin" || user?.role === "procurement_officer" && (
                                       <>
                                         <button
                                           onClick={() =>
@@ -656,7 +676,7 @@ export default function DisposalsPage() {
                       </h3>
                       <p className="text-gray-500 mb-4">
                         {recordFilter === "all"
-                          ? user?.role === "admin"
+                          ? user?.role === "admin" || user?.role === "procurement_officer"
                             ? "No assets from any department have been processed yet."
                             : `No assets from ${
                                 user?.department
@@ -664,14 +684,14 @@ export default function DisposalsPage() {
                                   : "your department"
                               } have been processed yet.`
                           : recordFilter === "approved"
-                          ? user?.role === "admin"
+                          ? user?.role === "admin" || user?.role === "procurement_officer"
                             ? "No approved disposal requests from any department yet."
                             : `No approved disposal requests from ${
                                 user?.department
                                   ? `${user.department} department`
                                   : "your department"
                               } yet.`
-                          : user?.role === "admin"
+                          : user?.role === "admin" || user?.role === "procurement_officer"
                           ? "No rejected disposal requests from any department yet."
                           : `No rejected disposal requests from ${
                               user?.department

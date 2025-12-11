@@ -33,6 +33,25 @@ $notes = $data['notes'] ?? null;
 pg_query($con, "BEGIN");
 
 try {
+    // Check user role
+    if (!isset($approved_by)) {
+        throw new Exception('User ID not provided for approval');
+    }
+
+    $user_query = "SELECT role FROM users WHERE id = $1";
+    $user_result = pg_query_params($con, $user_query, [$approved_by]);
+
+    if (!$user_result) {
+        throw new Exception('Failed to fetch user role');
+    }
+
+    $user_role = pg_fetch_assoc($user_result)['role'];
+
+    if ($user_role !== 'admin' && $user_role !== 'procurement_officer') {
+        http_response_code(403);
+        throw new Exception('You are not authorized to perform this action');
+    }
+
     if ($source_type === 'automatic') {
         // Handle automatic disposal (asset with Disposal Pending status)
         if ($action === 'approve') {
