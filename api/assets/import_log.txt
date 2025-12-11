@@ -1,11 +1,3 @@
-Script start at 2025-12-09 20:56:31
+Script start at 2025-12-11 13:14:18
 Shutdown function executed.
-Fatal Error: [1] Uncaught Error: Class "ZipArchive" not found in C:\Users\Administrator\Downloads\Compressed\procurement-main\vendor\phpoffice\phpspreadsheet\src\PhpSpreadsheet\Shared\File.php:61
-Stack trace:
-#0 C:\Users\Administrator\Downloads\Compressed\procurement-main\vendor\phpoffice\phpspreadsheet\src\PhpSpreadsheet\Shared\File.php(186): PhpOffice\PhpSpreadsheet\Shared\File::fileExists('zip://C:\\xampp\\...')
-#1 C:\Users\Administrator\Downloads\Compressed\procurement-main\vendor\phpoffice\phpspreadsheet\src\PhpSpreadsheet\Reader\Xlsx.php(92): PhpOffice\PhpSpreadsheet\Shared\File::testFileNoThrow('C:\\xampp\\tmp\\ph...', '_rels/.rels')
-#2 C:\Users\Administrator\Downloads\Compressed\procurement-main\vendor\phpoffice\phpspreadsheet\src\PhpSpreadsheet\IOFactory.php(174): PhpOffice\PhpSpreadsheet\Reader\Xlsx->canRead('C:\\xampp\\tmp\\ph...')
-#3 C:\Users\Administrator\Downloads\Compressed\procurement-main\vendor\phpoffice\phpspreadsheet\src\PhpSpreadsheet\IOFactory.php(112): PhpOffice\PhpSpreadsheet\IOFactory::createReaderForFile('C:\\xampp\\tmp\\ph...', NULL)
-#4 C:\Users\Administrator\Downloads\Compressed\procurement-main\api\assets\import.php(104): PhpOffice\PhpSpreadsheet\IOFactory::load('C:\\xampp\\tmp\\ph...')
-#5 {main}
-  thrown in C:\Users\Administrator\Downloads\Compressed\procurement-main\vendor\phpoffice\phpspreadsheet\src\PhpSpreadsheet\Shared\File.php on line 61
+Script finished without fatal errors.

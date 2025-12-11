@@ -32,13 +32,13 @@ register_shutdown_function(function () use ($logFile) {
 });
 
 // This function will handle non-fatal errors (warnings, notices)
-set_error_handler(function($severity, $message, $file, $line) use ($logFile) {
+set_error_handler(function ($severity, $message, $file, $line) use ($logFile) {
     if (!(error_reporting() & $severity)) {
         return false;
     }
     $errorMsg = "Warning/Notice: [$severity] $message in $file on line $line\n";
     file_put_contents($logFile, $errorMsg, FILE_APPEND);
-    
+
     // Don't exit on warnings, just log them. The script might be able to continue.
     return true; // Suppress default PHP handler
 });
@@ -163,6 +163,11 @@ try {
 
         $created_at = date('Y-m-d H:i:s');
 
+        $dept_prefix = strtoupper(substr(preg_replace('/[^a-zA-Z]/', '', $asset_department), 0, 3));
+        $cat_prefix = strtoupper(substr(preg_replace('/[^a-zA-Z]/', '', $category), 0, 3));
+        $random_num = mt_rand(100000, 999999);
+        $asset_tag = $dept_prefix . $cat_prefix . $random_num;
+
         // Map Excel columns to database fields
         $query = "INSERT INTO assets (
             name, category, department, brand, model, serial_number, 
@@ -184,7 +189,7 @@ try {
             $description,       // 11. description
             $current_value,     // 12. current_value
             'Active',           // 13. status
-            '',                 // 14. asset_tag (Default empty, assuming not unique/required)
+            $asset_tag,         // 14. asset_tag (Generated)
             $created_at,        // 15. created_at
             $created_at         // 16. updated_at
         ];
@@ -204,7 +209,7 @@ try {
     }
 
     echo json_encode([
-        'success' => true,
+        'success' => $failed === 0,
         'imported' => $imported,
         'failed' => $failed,
         'errors' => $errors
