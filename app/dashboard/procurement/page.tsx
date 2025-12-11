@@ -135,23 +135,7 @@ export default function ProcurementDashboard() {
             </div>
           </div>
 
-          <div className="bg-white rounded-lg shadow-lg p-6">
-            <h2 className="text-xl font-semibold mb-4 text-gray-800">Reports</h2>
-            <div className="space-y-4">
-              <Link
-                href="/reports/assets"
-                className="block bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 text-center transition-colors"
-              >
-                Asset Reports
-              </Link>
-              <Link
-                href="/reports/activities"
-                className="block bg-gray-100 text-gray-700 px-4 py-2 rounded hover:bg-gray-200 text-center transition-colors"
-              >
-                Activity Reports
-              </Link>
-            </div>
-          </div>
+
           <div className="bg-white rounded-lg shadow-lg p-6">
             <h2 className="text-xl font-semibold mb-4 text-gray-800">
               Purchase Orders
