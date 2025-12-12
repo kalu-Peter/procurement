@@ -317,6 +317,12 @@ export default function AdminDashboard() {
               >
                 View Tenders
               </Link>
+              <Link
+                href="/dashboard/tenders/bids"
+                className="block bg-gray-100 text-gray-700 px-4 py-2 rounded hover:bg-gray-200 text-center transition-colors"
+              >
+                View Submitted Bids
+              </Link>
             </div>
           </div>
           <div className="bg-white rounded-lg shadow-lg p-6">
