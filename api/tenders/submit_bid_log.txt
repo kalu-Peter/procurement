@@ -1,0 +1,7 @@
+Array
+(
+    [tender_id] => 07f60c3d-e29d-4b0b-b0a0-9c3850a16587
+    [supplier_id] => 7181c4e5-f7b2-4222-9e57-9cf0debe06c4
+    [bid_amount] => 100000
+    [notes] => 
+)

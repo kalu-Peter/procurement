@@ -6,12 +6,29 @@ import { useParams, useRouter } from "next/navigation";
 export default function SubmitBidPage() {
   const params = useParams();
   const router = useRouter();
+  const [suppliers, setSuppliers] = useState<{ id: string; name: string }[]>([]);
   const [supplierId, setSupplierId] = useState("");
   const [bidAmount, setBidAmount] = useState("");
   const [notes, setNotes] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const tenderId = params.id;
+
+  useEffect(() => {
+    const fetchSuppliers = async () => {
+      try {
+        const response = await fetch("http://localhost:8000/api/suppliers/list.php?status=approved");
+        const data = await response.json();
+        if (data.success) {
+          setSuppliers(data.suppliers);
+        }
+      } catch (error) {
+        console.error("Error fetching suppliers:", error);
+      }
+    };
+
+    fetchSuppliers();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -20,7 +37,7 @@ export default function SubmitBidPage() {
 
     // Basic validation
     if (!supplierId || !bidAmount) {
-      setError("Supplier ID and Bid Amount are required.");
+      setError("Please select a supplier and enter a bid amount.");
       setLoading(false);
       return;
     }
@@ -76,19 +93,24 @@ export default function SubmitBidPage() {
                   htmlFor="supplierId"
                   className="block text-sm font-medium text-gray-700"
                 >
-                  Supplier ID
+                  Select Your Company
                 </label>
-                <input
-                  type="text"
+                <select
                   id="supplierId"
                   value={supplierId}
                   onChange={(e) => setSupplierId(e.target.value)}
                   required
                   className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                  placeholder="Enter your supplier ID"
-                />
+                >
+                  <option value="">-- Please select your company --</option>
+                  {suppliers.map((supplier) => (
+                    <option key={supplier.id} value={supplier.id}>
+                      {supplier.name}
+                    </option>
+                  ))}
+                </select>
                 <p className="mt-2 text-xs text-gray-500">
-                  You receive this ID after registering as a supplier and getting approval.
+                  If your company is not listed, please register as a supplier and wait for approval.
                 </p>
               </div>
 
