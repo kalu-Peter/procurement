@@ -42,7 +42,7 @@ export default function SubmitBidPage() {
       const data = await response.json();
 
       if (data.success) {
-        router.push(`/tenders/${params.id}`);
+        router.push(`/dashboard/tenders/${params.id}`);
       } else {
         setError(data.error || "Failed to submit bid.");
       }

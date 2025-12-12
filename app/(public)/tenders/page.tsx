@@ -2,8 +2,6 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import Header from "@/components/Header";
-import { getCurrentUser } from "@/lib/auth";
 
 interface Tender {
   id: string;
@@ -19,7 +17,6 @@ interface Tender {
 export default function TendersPage() {
   const [tenders, setTenders] = useState<Tender[]>([]);
   const [loading, setLoading] = useState(true);
-  const [user, setUser] = useState(getCurrentUser());
 
   useEffect(() => {
     fetchTenders();
@@ -39,32 +36,17 @@ export default function TendersPage() {
     }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem("currentUser");
-    window.location.href = "/";
-  };
-
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header user={user} onLogout={handleLogout} />
       <main className="px-6 py-8">
         <div className="max-w-7xl mx-auto">
           <div className="flex justify-between items-center mb-8">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Tenders</h1>
+              <h1 className="text-3xl font-bold text-gray-900">Open Tenders</h1>
               <p className="text-gray-600 mt-2">
-                Browse and apply for open tenders
+                Browse and bid on open tenders
               </p>
             </div>
-            {user?.role === "admin" || user?.role === "procurement_officer" ? (
-              <Link
-                href="/tenders/new"
-                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition duration-200 flex items-center space-x-2"
-              >
-                <i className="ri-add-line"></i>
-                <span>New Tender</span>
-              </Link>
-            ) : null}
           </div>
 
           {loading ? (
@@ -136,6 +118,13 @@ export default function TendersPage() {
                           >
                             <i className="ri-eye-line mr-1"></i>
                             View Details
+                          </Link>
+                          <Link
+                            href={`/tenders/${tender.id}/submit`}
+                            className="text-green-600 hover:text-green-800 text-sm font-medium ml-4"
+                          >
+                            <i className="ri-send-plane-line mr-1"></i>
+                            Submit Bid
                           </Link>
                         </td>
                       </tr>

@@ -39,7 +39,7 @@ export default function NewTenderPage() {
       const data = await response.json();
 
       if (data.success) {
-        router.push("/tenders");
+        router.push("/dashboard/tenders");
       } else {
         setError(data.error || "Failed to create tender.");
       }

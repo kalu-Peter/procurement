@@ -2,8 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
-import Header from "@/components/Header";
-import { getCurrentUser } from "@/lib/auth";
 import Link from "next/link";
 
 interface Tender {
@@ -22,7 +20,6 @@ export default function TenderDetailsPage() {
   const params = useParams();
   const [tender, setTender] = useState<Tender | null>(null);
   const [loading, setLoading] = useState(true);
-  const [user, setUser] = useState(getCurrentUser());
 
   useEffect(() => {
     if (params.id) {
@@ -46,11 +43,6 @@ export default function TenderDetailsPage() {
     }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem("currentUser");
-    window.location.href = "/";
-  };
-
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -69,7 +61,6 @@ export default function TenderDetailsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header user={user} onLogout={handleLogout} />
       <main className="px-6 py-8">
         <div className="max-w-4xl mx-auto">
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
@@ -131,7 +122,7 @@ export default function TenderDetailsPage() {
                 <p>No documents available for this tender.</p>
               )}
             </div>
-            {user && user.role === "supplier" && tender.status === "open" && (
+            {tender.status === "open" && (
               <div className="mt-8 pt-6 border-t border-gray-200 text-right">
                 <Link
                   href={`/tenders/${tender.id}/submit`}
