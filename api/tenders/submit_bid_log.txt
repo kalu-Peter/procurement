@@ -5,3 +5,10 @@ Array
     [bid_amount] => 100000
     [notes] => 
 )
+Array
+(
+    [tender_id] => 3b2e3c05-1e87-4ac9-b8fa-e50f21d8e89c
+    [supplier_id] => 0e115e79-1fdf-48d8-af97-43255dc8e084
+    [bid_amount] => 449999
+    [notes] => 
+)

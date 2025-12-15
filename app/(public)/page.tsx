@@ -147,17 +147,17 @@ export default function Home() {
       <section className="bg-gray-100 py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-3xl font-bold text-gray-900 mb-4">
-            Ready to Transform Your Asset Management?
+            Streamling TUM Procurement Processes
           </h2>
           <p className="text-xl text-gray-600 mb-8">
-            Join organizations already using ProcurementSystem to streamline
-            their operations
+            Join the growing community of organizations using ProcurementSystem
+            to enhance their procurement efficiency
           </p>
           <Link
-            href="/login"
+            href="/suppliers"
             className="bg-blue-600 text-white px-8 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
           >
-            Start Your Journey
+            Get Started Now
           </Link>
         </div>
       </section>
