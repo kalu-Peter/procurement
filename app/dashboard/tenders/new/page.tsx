@@ -22,19 +22,22 @@ export default function NewTenderPage() {
     setError("");
 
     try {
-      const response = await fetch("http://localhost:8000/api/tenders/create.php", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          title,
-          description,
-          category,
-          budget,
-          deadline,
-        }),
-      });
+      const response = await fetch(
+        "http://localhost:8000/api/tenders/create.php",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            title,
+            description,
+            category,
+            budget,
+            deadline,
+          }),
+        }
+      );
 
       const data = await response.json();
 
@@ -60,10 +63,6 @@ export default function NewTenderPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header user={user} onLogout={() => {
-        localStorage.removeItem("currentUser");
-        window.location.href = "/";
-      }} />
       <main className="px-6 py-8">
         <div className="max-w-4xl mx-auto">
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
@@ -71,13 +70,19 @@ export default function NewTenderPage() {
               Create New Tender
             </h1>
             {error && (
-              <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
+              <div
+                className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4"
+                role="alert"
+              >
                 <span className="block sm:inline">{error}</span>
               </div>
             )}
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
-                <label htmlFor="title" className="block text-sm font-medium text-gray-700">
+                <label
+                  htmlFor="title"
+                  className="block text-sm font-medium text-gray-700"
+                >
                   Title
                 </label>
                 <input
@@ -90,7 +95,10 @@ export default function NewTenderPage() {
                 />
               </div>
               <div>
-                <label htmlFor="description" className="block text-sm font-medium text-gray-700">
+                <label
+                  htmlFor="description"
+                  className="block text-sm font-medium text-gray-700"
+                >
                   Description
                 </label>
                 <textarea
@@ -103,7 +111,10 @@ export default function NewTenderPage() {
                 />
               </div>
               <div>
-                <label htmlFor="category" className="block text-sm font-medium text-gray-700">
+                <label
+                  htmlFor="category"
+                  className="block text-sm font-medium text-gray-700"
+                >
                   Category
                 </label>
                 <input
@@ -117,7 +128,10 @@ export default function NewTenderPage() {
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label htmlFor="budget" className="block text-sm font-medium text-gray-700">
+                  <label
+                    htmlFor="budget"
+                    className="block text-sm font-medium text-gray-700"
+                  >
                     Budget (KES)
                   </label>
                   <input
@@ -130,7 +144,10 @@ export default function NewTenderPage() {
                   />
                 </div>
                 <div>
-                  <label htmlFor="deadline" className="block text-sm font-medium text-gray-700">
+                  <label
+                    htmlFor="deadline"
+                    className="block text-sm font-medium text-gray-700"
+                  >
                     Deadline
                   </label>
                   <input
